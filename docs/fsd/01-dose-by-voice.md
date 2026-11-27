@@ -91,7 +91,7 @@ Out of scope: medical advice, dose calculation, drug interaction, identifying a 
 | AC-DOSE-05-2 | Phase `snoozed` | 10 minutes pass | phase `asked`; `remind` spoken (this counts as the one repeat) |
 | AC-DOSE-05-3 | After the snooze reminder | 10 more minutes of silence | escalation (FR-DOSE-06) |
 
-### FR-DOSE-06 No answer: repeat once, then tell the family (R6) — P, built; F adds server guard
+### FR-DOSE-06 No answer: repeat once, then tell the family (R6) — P, built; server guard built (backend)
 
 **Description.** No answer for 10 minutes: repeat once. Still none 10 minutes after the repeat (20 in total): `escalated`, a `missed_dose` alert, and the `escalated` message.
 
@@ -143,7 +143,7 @@ Out of scope: medical advice, dose calculation, drug interaction, identifying a 
 | AC-DOSE-09-3 | Phase `confirming` | the person presses Yes | the dose is recorded, with `via = button` |
 | AC-DOSE-09-4 | A typed answer | text is sent | the same word rules apply as for speech |
 
-### FR-DOSE-10 A dose is recorded once — P, built (in the browser); F on the server
+### FR-DOSE-10 A dose is recorded once — P, built (in the browser); server built (backend); the test page retries a failed send, the app screens do not yet
 
 **Description.** Each slot has at most one dose record. A retry, a double tap or a duplicate request never records twice.
 

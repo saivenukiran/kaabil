@@ -22,7 +22,7 @@ Release P has no accounts: one browser holds everything. Release F adds a server
 
 ## Requirements
 
-### FR-AUTH-01 Family sign-in — F
+### FR-AUTH-01 Family sign-in — email and password built (backend); email code or link not built
 
 **Description.** First method: email one-time code or magic link. A phone-number code needs a registered SMS sender in India and is decided later.
 
@@ -33,7 +33,7 @@ Release P has no accounts: one browser holds everything. Release F adds a server
 | AC-AUTH-01-3 | Five wrong codes in a row | the sixth attempt | sign-in is slowed or locked for that email and address for a period, and the real owner is told |
 | AC-AUTH-01-4 | An email that has no account | sign-in is requested | the answer is the same as for one that has (no account probing) |
 
-### FR-AUTH-02 Sessions — F
+### FR-AUTH-02 Sessions — cookie session and sign-out built (backend); the devices and sessions page is not built
 
 | AC | Given | When | Then |
 |---|---|---|---|
@@ -42,7 +42,7 @@ Release P has no accounts: one browser holds everything. Release F adds a server
 | AC-AUTH-02-3 | The family views "devices and sessions" | the page opens | each session and paired phone is listed with last-used time, and can be revoked |
 | AC-AUTH-02-4 | A session is revoked | the next request from it | it is refused within one minute |
 
-### FR-AUTH-03 Care group and roles — F
+### FR-AUTH-03 Care group and roles — built (backend): roles owner and member; the viewer role is not built
 
 | AC | Given | When | Then |
 |---|---|---|---|
@@ -60,7 +60,7 @@ Release P has no accounts: one browser holds everything. Release F adds a server
 | AC-AUTH-04-3 | An owner cancels an invite | the link is used | it is refused |
 | AC-AUTH-04-4 | A member is removed | their next request | refused; their sessions are revoked |
 
-### FR-AUTH-05 Pair the person's phone — F
+### FR-AUTH-05 Pair the person's phone — built (backend and test page)
 
 **Description.** The family member creates a pairing code in the family app. The family member enters it on the person's phone (during setup, in the same room or while on a video call). The person is never asked to read out or type a code.
 
@@ -72,7 +72,7 @@ Release P has no accounts: one browser holds everything. Release F adds a server
 | AC-AUTH-05-4 | The person screen | in any state | nothing on it asks the person to say, read or type a code |
 | AC-AUTH-05-5 | A second phone is paired | the code is used | the owner chooses whether it replaces the first or is added |
 
-### FR-AUTH-06 Person's device credential — F
+### FR-AUTH-06 Person's device credential — built (backend)
 
 | AC | Given | When | Then |
 |---|---|---|---|

@@ -83,7 +83,7 @@ How the family sets up the plan, and how they find out what happened. Legend: [R
 | AC-ALERT-01-2 | An alert for slot S exists | the engine sees the same miss again | no second alert for S |
 | AC-ALERT-01-3 | Consent for emergencies is off | the person says "ఛాతీ నొప్పి" | the 112 button is shown, no family alert is created, and the person is not told the family was alerted |
 
-### FR-ALERT-02 Delivery per channel — P in-app, F push and others
+### FR-ALERT-02 Delivery per channel — P in-app; live delivery to the family built (backend); push not built
 
 **Description.** Each alert stores a delivery status per channel (in-app, push, later SMS or a call). P delivers in the app only and says so.
 
@@ -94,7 +94,7 @@ How the family sets up the plan, and how they find out what happened. Legend: [R
 | AC-ALERT-02-3 (F) | A push fails | the status is saved | the alert stays unacknowledged and is retried, then shown as "not delivered" in the app |
 | AC-ALERT-02-4 (F) | A family member has the dashboard open | an alert is created | it appears within 3 seconds (95th percentile, measured) without a reload |
 
-### FR-ALERT-03 Acknowledge and escalate to a second family member — P acknowledge, F escalate
+### FR-ALERT-03 Acknowledge and escalate to a second family member — P acknowledge; acknowledge built (backend); escalation not built
 
 | AC | Given | When | Then |
 |---|---|---|---|
