@@ -12,6 +12,9 @@ An npm-workspaces monorepo, run with [Turborepo](https://turborepo.dev).
 | `apps/api` | The backend: family sign-in, care groups, pairing, plan sync, doses, alerts, live events, the server's missed-dose check, and the plain test console at `/dev`. Section 3b. |
 | `packages/contract` | `@kaabil/contract`: the request and response schemas (Zod), their types, and a typed client with a live-event reader. The app and the API both import it, so a drift between them fails loudly. |
 | `packages/db` | `@kaabil/db`: the database schema (Drizzle, Postgres) and the generated SQL migrations. |
+| `packages/voice` | `@kaabil/voice`: the speech port (Web Speech API), the framework-free voice turn loop, the player that uses a family member's recording instead of the synthetic voice, and the audio processing for recordings. |
+| `apps/testpage` | A plain static page at `/test/`: the family phone and the person's phone side by side on the real backend. For testing the whole prototype. Section 3c. |
+| `tests/e2e` | End-to-end scripts for TestSutra that drive the test page in a real browser. |
 | `packages/core` | `@kaabil/core`: pure TypeScript with no browser, clock, storage or speech in it. The dose dialogue, the Yes/No word rules, the message tables, the medicine parser, the test scenarios. It is compiled without the DOM type library, so touching the browser from there fails the typecheck. |
 | `turbo.json` | Tasks: `build`, `typecheck`, `test`, `dev`, with caching. |
 | `Dockerfile`, `docker-compose.yml`, `nginx.conf` | One Dockerfile builds the `api` and `web` images. Compose runs `init` (random secrets into a volume), `db` (Postgres, not published), `api` (port 3000, not published) and `web` (nginx on port 8080, which also proxies `/api`). |
@@ -37,6 +40,7 @@ npm test             # 104 tests in packages/core, plus the tests of packages/co
 npm run build        # typecheck + production build into apps/web/dist
 npm run check        # everything the pre-push guard runs
 npm run smoke        # start the Docker image and check what it serves (needs Docker)
+npm run e2e          # TestSutra end-to-end scripts against a running copy (set KAABIL_TESTSUTRA to its path)
 ```
 
 The Docker image build calls the web workspace's own build script, so the container does not need Turborepo to run.
@@ -84,6 +88,14 @@ The browser talks to one origin. `web` (nginx) serves the app and proxies `/api`
 | Test console | `GET /dev`, only when `KAABIL_DEV_CONSOLE=1`: a plain page to drive and watch the whole flow. `POST /api/dev/remind-now` sends a `remind` event to the group's phones. |
 
 The routes, bodies and answers are the schemas in `packages/contract`. Every error has the same shape, `{ "error": { "code", "message" } }`, with 400 (invalid body), 401, 403, 404 (also for another family's id), 413, 429.
+
+## 3c. The test page and custom voice
+
+**The test page** (`apps/testpage`, served at `/test/`) has two phones on one screen, both talking to the real backend. The family phone signs up, creates the care group, adds a medicine (typed line, or "due in 2 minutes"), makes a pairing code, sees doses and alerts live and can acknowledge them, and records its own voice. The person's phone pairs with the code (filled in for you, since both phones are on one page), runs the real dose dialogue from `@kaabil/core` with the shared voice loop, and reports every dose and alert to the backend; a failed send is retried every few seconds and nothing is marked sent until the server answers. It has the demo controls the app screens have (remind now, advance 10 minutes). It is a developer tool, labelled so.
+
+**Custom voice.** A family member records their own voice reading one of Kaabil's fixed sentences, with the person's name and the medicine filled in. The server lists those sentences (`GET /api/care/groups/:id/voice`) and stores a recording only for a listed sentence, only with the recorder's consent (the `x-voice-consent` header), only if it is an allowed audio type whose first bytes match that type, and between 200 bytes and 1.5 MB. The person's phone asks for the list (the sentence each recording says, not a way to say anything else) and plays a recording instead of the synthetic voice only when it is about to say that exact sentence; otherwise, or if a recording cannot play, the synthetic voice speaks. A recording is retired when its sentence changes (a renamed medicine). Before upload the browser trims the silence, evens out the loudness and writes a small mono 16 kHz WAV (at most 15 seconds, about 32 KB a second). Recordings can be deleted one by one or all at once, and go with the group. This is the one place audio is stored; it is the family member's own voice, with their consent. Making synthetic speech in someone's voice (voice cloning) is not built.
+
+**End-to-end scripts** (`tests/e2e`, `npm run e2e`) drive the test page with TestSutra: a dose answered with the buttons reaches the family live; an emergency and a missed dose alert the family, who acknowledge; a family member records their voice, the person's phone plays it, and the family deletes it.
 
 ## 4. Word rules (`interpret`)
 
@@ -180,7 +192,7 @@ The same 12 scenarios run in the app's **Test panel** tab, which shows expected 
 | Area | What we do |
 |---|---|
 | Secrets | None in the repository, the images or the browser bundle. The compose `init` service writes a random database password and session secret into a volume on first start; the API reads them from files. `.env.example` lists the names of finale keys with empty values. Cloud speech and vision are "key not set" placeholders, and their keys will live on the server only. |
-| Data | The app screens keep text transcripts only, in the browser's `localStorage`; "Delete all data" erases them. The backend stores the family's account, the plan, dose records and alerts, and receives no transcripts. Audio is never stored or sent by our code. Server-side deletion of a group is not built yet. |
+| Data | The app screens keep text transcripts only, in the browser's `localStorage`; "Delete all data" erases them. The backend stores the family's account, the plan, dose records and alerts, and receives no transcripts. The person's audio is never stored or sent by our code. The one exception is a family member's recording of a fixed sentence (custom voice, section 3c), stored on the server with their consent so the person's phone can play it, and deletable one by one or all at once. Server-side deletion of a whole group is not built yet. |
 | Browser speech | In Chrome, the Web Speech API may send audio to the browser vendor's service. We do not control that. |
 | Containers | Non-root nginx and a non-root API with a read-only file system, all Linux capabilities dropped, `no-new-privileges`. Only port 8080 is published; the API and the database are reachable only inside the compose network (the smoke test checks ports 3000 and 5432). |
 | Who may do what | Every family route checks that the signed-in user belongs to the group in the path; another family's id answers 404. A phone's token works only on `/api/device/*` for its own group. Better Auth handles passwords and sessions. |
@@ -189,6 +201,7 @@ The same 12 scenarios run in the app's **Test panel** tab, which shows expected 
 | Guessing | Pairing: 10 tries a minute per address, an 8-digit code that lives 10 minutes and works once, and the same answer for a wrong, used or expired code. Sign-in: Better Auth's rate limit. The code and the device token are stored only as hashes. |
 | API headers | `default-src 'none'`, `nosniff`, no referrer, no framing, `no-store` on every answer; `Strict-Transport-Security` only when the public address is https. |
 | HTTP headers | Content-Security-Policy limited to our own origin, `nosniff`, no referrer, no framing, microphone and camera limited to our own origin. |
+| Recordings | A recording is accepted only for a sentence Kaabil says to this person, with the recorder's consent, as an allowed audio type whose first bytes match it, and within a size limit. It is served with its stored type and `nosniff`, only to the group's family and to its own paired phones, and removed on delete or with the group. |
 | Prompt injection | No language model reads user text in this prototype, and Kaabil speaks only the 12 fixed messages. At the finale, text inside photos or messages is treated as data, never as instructions. |
 | Logs | Method, path, status and time only: no names, medicine names or transcripts. |
 | Commits | A pre-push guard blocks secrets, personal emails, local paths, env files and attribution lines, and runs typecheck, tests and build. |
@@ -200,7 +213,8 @@ The same 12 scenarios run in the app's **Test panel** tab, which shows expected 
 | The app screens are not connected to the backend yet | The screens keep their state in the browser. The backend works and is tested; today the test console at `/dev` drives it across devices. Connecting the screens is the next step |
 | Plain HTTP in the compose file | A public copy must sit behind HTTPS; a phone on a plain `http://` address cannot use the microphone |
 | Push notifications are not set up | The family sees alerts live only while the dashboard is open |
-| A failed send from the phone is not retried yet | The screen must not say "the family was told" until the server answers |
+| The test page retries a failed send every few seconds; the app screens do not exist on the backend yet | The screen must not say "the family was told" until the server answers |
+| Custom voice is not verified on a real phone | Recording from a real microphone and playing the clip there are untested; the end-to-end test uploads a generated file. Recordings are stored in the database (1.5 MB at most each) |
 | Live events are in memory in one process | A restart closes the streams; clients reconnect. One server is a single point of failure |
 | Web Speech API needs Chrome and a secure origin (`localhost` counts) | Other browsers fall back to buttons and typing |
 | Telugu recognition and the Telugu voice on phones are unmeasured | See the "not verified" list in the PRD |
