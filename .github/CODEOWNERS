@@ -1,0 +1,4 @@
+# Every pull request asks the other founder for review automatically.
+# GitHub never requests a review from the PR's own author, so when one of us opens a
+# PR the other is requested, and the reverse. Keep both names on this single rule.
+* @saivenukiran @JagadeeshBabuDamarasingu

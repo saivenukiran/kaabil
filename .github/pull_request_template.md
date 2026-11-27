@@ -1,3 +1,5 @@
+<!-- Assignee: you (the author). Reviewer: the other founder, requested automatically by .github/CODEOWNERS. -->
+
 ## What changed
 <!-- One or two sentences. -->
 
