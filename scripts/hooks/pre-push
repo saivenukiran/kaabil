@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# Pre-push guard. Every check the team agreed on runs here, on your machine, so the
+# project does not depend on GitHub Actions (our minutes are limited and Actions is off).
+#
+#   git push            runs automatically (npm install turns it on: core.hooksPath)
+#   npm run check       runs the same checks by hand against origin/main..HEAD
+#
+# Skipping: `git push --no-verify` skips this guard. Do not, except in an emergency,
+# and write it in the internal decisions list.
+set -u
+
+ZERO=0000000000000000000000000000000000000000
+MODE=hook
+[ "${1:-}" = "--local" ] && MODE=local
+
+cd "$(git rev-parse --show-toplevel)" || exit 1
+
+red()   { printf '\033[31m%s\033[0m\n' "$*"; }
+green() { printf '\033[32m%s\033[0m\n' "$*"; }
+step()  { printf '\n== %s\n' "$*"; }
+FAILED=0
+fail()  { red "FAIL: $*"; FAILED=1; }
+
+# ---- 1. Work out which commits are being pushed ---------------------------------
+RANGES=()
+if [ "$MODE" = "local" ]; then
+  if git rev-parse --verify -q origin/main >/dev/null; then RANGES+=("origin/main..HEAD"); else RANGES+=("HEAD"); fi
+else
+  while read -r local_ref local_sha remote_ref remote_sha; do
+    if [ "$remote_ref" = "refs/heads/main" ] && [ "${KAABIL_ALLOW_MAIN:-}" != "1" ] && [ "$local_sha" != "$ZERO" ]; then
+      fail "direct push to main. Open a pull request from a feature branch instead (owner emergency: KAABIL_ALLOW_MAIN=1)."
+    fi
+    [ "$local_sha" = "$ZERO" ] && continue            # deleting a remote branch: nothing to check
+    if [ "$remote_sha" = "$ZERO" ]; then
+      if git rev-parse --verify -q origin/main >/dev/null; then RANGES+=("origin/main..$local_sha"); else RANGES+=("$local_sha"); fi
+    else
+      RANGES+=("$remote_sha..$local_sha")
+    fi
+  done
+fi
+[ "$FAILED" = "1" ] && exit 1
+if [ "${#RANGES[@]}" = "0" ]; then green "Nothing to check."; exit 0; fi
+
+# ---- 2. Inspect the commits and the diff ----------------------------------------
+SECRET_RE='ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9]{20,}|AIza[0-9A-Za-z_-]{30,}|AKIA[0-9A-Z]{16}|xox[baprs]-[A-Za-z0-9-]{10,}|BEGIN [A-Z ]*PRIVATE KEY|(api[_-]?key|secret|token|password)["'"'"']? *[:=] *["'"'"'][^"'"'"']{8,}["'"'"']'
+EMAIL_RE='[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
+PATH_RE='[A-Za-z]:\\(Users|GitHub|Claude)|/home/[a-z][a-z0-9_-]+/'
+TRAILER_RE='co-authored-by:|claude-session:|generated with|claude code'
+FORBIDDEN_FILE_RE='(^|/)\.env(\..*)?$|\.(pem|key|p12|pfx)$|(^|/)(CLAUDE|MEMORY)\.md$|(^|/)node_modules/|^dist/'
+
+for range in "${RANGES[@]}"; do
+  step "Commits in $range"
+  git log --format='%h %an <%ae> | %s' "$range"
+
+  step "1. Author and committer use the GitHub noreply email"
+  bad=$(git log --format='%h %ae %ce' "$range" | grep -viE '^[0-9a-f]+ [^ ]+@users\.noreply\.github\.com [^ ]+@users\.noreply\.github\.com$' || true)
+  [ -n "$bad" ] && { echo "$bad"; fail "a commit uses a real email. Set git config user.email to your <id>+<username>@users.noreply.github.com address and re-create the commit."; }
+
+  step "2. No attribution trailers"
+  bad=$(git log --format=%B "$range" | grep -iE "$TRAILER_RE" || true)
+  [ -n "$bad" ] && { echo "$bad"; fail "commit message has an attribution trailer."; }
+
+  step "3. No forbidden files (env files, keys, internal notes, build output)"
+  bad=$(git diff --name-only --diff-filter=AM "$range" | grep -E "$FORBIDDEN_FILE_RE" | grep -v '^\.env\.example$' || true)
+  [ -n "$bad" ] && { echo "$bad"; fail "forbidden file in the push."; }
+
+  step "4. No secrets, personal emails or local paths in added lines"
+  added=$(git diff -U0 "$range" -- . ':!package-lock.json' | grep -E '^\+' | grep -vE '^\+\+\+' || true)
+  bad=$(printf '%s\n' "$added" | grep -inE "$SECRET_RE" || true)
+  [ -n "$bad" ] && { echo "$bad" | cut -c1-120; fail "possible secret in the diff (rotate it if it was ever real)."; }
+  bad=$(printf '%s\n' "$added" | grep -inE "$EMAIL_RE" | grep -v 'users\.noreply\.github\.com' || true)
+  [ -n "$bad" ] && { echo "$bad" | cut -c1-120; fail "email address in the diff. This repo is public."; }
+  bad=$(printf '%s\n' "$added" | grep -inE "$PATH_RE" || true)
+  [ -n "$bad" ] && { echo "$bad" | cut -c1-120; fail "local file path in the diff."; }
+done
+[ "$FAILED" = "1" ] && { red "Push blocked by the checks above."; exit 1; }
+
+# ---- 3. Run the project checks --------------------------------------------------
+if [ ! -d node_modules ]; then
+  fail "node_modules is missing. Run: npm ci"
+  exit 1
+fi
+
+step "5. Typecheck"; npm run --silent typecheck || fail "typecheck failed"
+step "6. Unit tests"; npm test --silent || fail "tests failed"
+step "7. Production build"; npm run --silent build || fail "build failed"
+
+step "8. Docker (compose file and image)"
+if [ "${KAABIL_SKIP_DOCKER:-}" = "1" ]; then
+  echo "SKIPPED by KAABIL_SKIP_DOCKER=1"
+elif command -v docker >/dev/null 2>&1; then
+  docker compose config -q || fail "docker-compose.yml is invalid"
+  docker compose build || fail "docker image build failed"
+else
+  echo "SKIPPED: docker is not installed on this machine. Someone with Docker must run"
+  echo "         'docker compose up --build' before the final submission."
+fi
+
+if [ "$FAILED" = "1" ]; then red "Push blocked: fix the failures above."; exit 1; fi
+green "All checks passed."
+exit 0
