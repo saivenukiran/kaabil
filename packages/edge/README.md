@@ -32,6 +32,14 @@ cd packages/edge
 npx wrangler deploy                                   # prints https://kaabil.<account>.workers.dev
 ```
 
+## The short way: one command
+
+```bash
+KAABIL_CLOUDFLARED=<path to cloudflared.exe> KAABIL_EDGE_URL=https://kaabil.<account>.workers.dev npm run up --workspace @kaabil/edge
+```
+
+It starts the backend with the right public address, starts the tunnel, tells the Worker where it is, checks the whole path, prints the address to open on the phone, and keeps running (Ctrl-C stops the tunnel). Run it again after a restart: the tunnel gets a new address every time and the script sets it. The steps below are what it does, one by one.
+
 ## Point it at the backend (every time the tunnel starts)
 
 A quick tunnel gets a new address each time it starts. Start it, tell the Worker, and tell the backend the public address:
