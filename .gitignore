@@ -15,3 +15,5 @@ Thumbs.db
 .vitest/
 test-results/
 .demo-account.json
+packages/edge/public/
+.wrangler/

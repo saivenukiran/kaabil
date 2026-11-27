@@ -1,0 +1,19 @@
+{
+  // The Worker that puts Kaabil on HTTPS. Deploy with: npx wrangler deploy (see README.md).
+  "name": "kaabil",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    // The app is a single-page app: an unknown path opens it instead of an error page.
+    "not_found_handling": "single-page-application",
+    // The backend's paths run the Worker first; everything else is served straight from the assets.
+    "run_worker_first": ["/api/*", "/dev"]
+  },
+  "kv_namespaces": [
+    // Holds the backend address under the key "origin". Not a secret.
+    { "binding": "CONFIG", "id": "902ddb8b0d0a4542a7bc1ff54f0acbdf" }
+  ],
+  "observability": { "enabled": false }
+}
