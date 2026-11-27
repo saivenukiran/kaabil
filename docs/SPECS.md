@@ -8,18 +8,22 @@ An npm-workspaces monorepo, run with [Turborepo](https://turborepo.dev).
 
 | Path | What it is |
 |---|---|
-| `apps/web` | The React app: person screen, family screen, test panel, roadmap. Uses the browser's speech and `localStorage`. |
+| `apps/web` | The React app: person screen, family screen, test panel, roadmap. Uses the browser's speech and `localStorage`. **Not connected to the backend yet.** |
+| `apps/api` | The backend: family sign-in, care groups, pairing, plan sync, doses, alerts, live events, the server's missed-dose check, and the plain test console at `/dev`. Section 3b. |
+| `packages/contract` | `@kaabil/contract`: the request and response schemas (Zod), their types, and a typed client with a live-event reader. The app and the API both import it, so a drift between them fails loudly. |
+| `packages/db` | `@kaabil/db`: the database schema (Drizzle, Postgres) and the generated SQL migrations. |
 | `packages/core` | `@kaabil/core`: pure TypeScript with no browser, clock, storage or speech in it. The dose dialogue, the Yes/No word rules, the message tables, the medicine parser, the test scenarios. It is compiled without the DOM type library, so touching the browser from there fails the typecheck. |
 | `turbo.json` | Tasks: `build`, `typecheck`, `test`, `dev`, with caching. |
-| `Dockerfile`, `docker-compose.yml`, `nginx.conf` | Build and serve the static app on port 8080. |
+| `Dockerfile`, `docker-compose.yml`, `nginx.conf` | One Dockerfile builds the `api` and `web` images. Compose runs `init` (random secrets into a volume), `db` (Postgres, not published), `api` (port 3000, not published) and `web` (nginx on port 8080, which also proxies `/api`). |
 | `scripts/hooks/pre-push` | Local checks before every push (GitHub Actions is not used). |
 
-The finale will add apps next to `apps/web` (a server-side key proxy, a phone app) that import the same `@kaabil/core`.
+A phone app at the finale will import the same `@kaabil/core` and `@kaabil/contract`. Cloud speech and vision will be added to `apps/api`, so their keys stay on the server.
 
 ## 2. Run and test
 
 ```bash
 docker compose up --build        # http://localhost:8080, no keys, no .env
+                                 # the test console is at http://localhost:8080/dev
 ```
 
 Without Docker (Node 24):
@@ -27,8 +31,9 @@ Without Docker (Node 24):
 ```bash
 npm ci
 npm run dev          # http://localhost:5173
-npm run typecheck    # both packages
-npm test             # 104 tests in packages/core
+npm run typecheck    # every package
+npm test             # 104 tests in packages/core, plus the tests of packages/contract and apps/api
+                     # (the API tests run on an in-process Postgres: no Docker needed)
 npm run build        # typecheck + production build into apps/web/dist
 npm run check        # everything the pre-push guard runs
 npm run smoke        # start the Docker image and check what it serves (needs Docker)
@@ -60,6 +65,25 @@ The Docker image build calls the web workspace's own build script, so the contai
 | Store | `apps/web/src/store.ts` | Holds `AppState`, saves it, and syncs open tabs. |
 
 Spoken output is one of 12 fixed `MessageKey`s: `remind`, `confirm_log`, `logged`, `snooze`, `already_logged`, `not_logged`, `clarify`, `escalated`, `emergency`, `buttons`, `help`, `stopped`. Kaabil does not generate free text, so it cannot say something we did not write.
+
+## 3b. Backend (`apps/api`)
+
+The browser talks to one origin. `web` (nginx) serves the app and proxies `/api` to the `api`; the `api` talks to `db`. The dose dialogue still runs on the person's phone (`@kaabil/core`); the server stores the results and guards the missed dose.
+
+| Part | What it does |
+|---|---|
+| Sign-in | Better Auth: email and password (10 characters or more), a session cookie (`HttpOnly`, `SameSite=Lax`, `Secure` when the address is https, 30 days). Better Auth's organization plugin is the care group: the group id is the organization id, roles are `owner` and `member`. We write no password, session or role code. |
+| Care group | One person and their family: how to address the person, language, two consent switches (missed dose, emergency), medicines. A medicine is added as the typed line (`Metformin 500, 1-0-1`, parsed by `@kaabil/core`) or as fields. |
+| Pairing | The family member asks for a code: 8 digits, valid 10 minutes, works once, one live code per group; only its hash is stored. The family member types it on the person's phone, which receives a long random device token (only its hash is stored). The person never has an account, an OTP or a PIN, and never says or types the code. |
+| The phone | With its token it can read its group's plan, post doses and alerts, and listen for events. It cannot use any family route. A revoked phone is refused at once. |
+| Doses | One row per slot (`medicineId`, day and `HH:MM` joined by a vertical bar). The key is unique per group and slot, so a retry returns the first record and records nothing twice. |
+| Alerts | `missed_dose` needs the missed-dose consent, `emergency` needs the emergency consent, `double_dose` is always recorded. A missed or repeated-dose alert is unique per slot (the database enforces it); each emergency is recorded. The answer says why an alert was not created. |
+| Live events | Server-sent events: `dose`, `alert`, `plan`, `device`, `remind`, `ping` every 15 seconds. A family stream per group and a stream per phone. A stream closes when the session or the phone is revoked. The events are kept in memory in one process. |
+| Missed-dose check | Every 60 seconds the server looks at every slot of every group with consent and a paired phone. A slot with no dose 22 minutes after its time raises one `missed_dose` alert, unless the medicine was added after that slot time. The phone's own alert (20 minutes) and this one cannot both exist. Times are read in `Asia/Kolkata` (`KAABIL_TZ`). |
+| Voice | `GET /api/voice/status` says `key not set` for cloud speech and voice. The proxies arrive with a provider key. |
+| Test console | `GET /dev`, only when `KAABIL_DEV_CONSOLE=1`: a plain page to drive and watch the whole flow. `POST /api/dev/remind-now` sends a `remind` event to the group's phones. |
+
+The routes, bodies and answers are the schemas in `packages/contract`. Every error has the same shape, `{ "error": { "code", "message" } }`, with 400 (invalid body), 401, 403, 404 (also for another family's id), 413, 429.
 
 ## 4. Word rules (`interpret`)
 
@@ -155,19 +179,29 @@ The same 12 scenarios run in the app's **Test panel** tab, which shows expected 
 
 | Area | What we do |
 |---|---|
-| Secrets | None in the repository or the browser bundle. `.env.example` lists the names of finale keys with empty values. Cloud speech and vision are "key not set" placeholders, and the finale will keep their keys in a server-side proxy only. |
-| Data | Text transcripts only, in the browser's `localStorage`. Audio is never stored or sent by our code. "Delete all data" erases everything. |
+| Secrets | None in the repository, the images or the browser bundle. The compose `init` service writes a random database password and session secret into a volume on first start; the API reads them from files. `.env.example` lists the names of finale keys with empty values. Cloud speech and vision are "key not set" placeholders, and their keys will live on the server only. |
+| Data | The app screens keep text transcripts only, in the browser's `localStorage`; "Delete all data" erases them. The backend stores the family's account, the plan, dose records and alerts, and receives no transcripts. Audio is never stored or sent by our code. Server-side deletion of a group is not built yet. |
 | Browser speech | In Chrome, the Web Speech API may send audio to the browser vendor's service. We do not control that. |
-| Container | Non-root nginx, all Linux capabilities dropped, `no-new-privileges`. |
+| Containers | Non-root nginx and a non-root API with a read-only file system, all Linux capabilities dropped, `no-new-privileges`. Only port 8080 is published; the API and the database are reachable only inside the compose network (the smoke test checks ports 3000 and 5432). |
+| Who may do what | Every family route checks that the signed-in user belongs to the group in the path; another family's id answers 404. A phone's token works only on `/api/device/*` for its own group. Better Auth handles passwords and sessions. |
+| Input | Every body is parsed against a strict Zod schema (unknown fields are refused); JSON bodies over 64 KB get 413; database access goes through Drizzle with parameters. |
+| Cross-site requests | A data-changing family request must carry an allowed `Origin` (or, with none, not be marked cross-site by the browser). The API and the app share one origin, so there is no CORS. |
+| Guessing | Pairing: 10 tries a minute per address, an 8-digit code that lives 10 minutes and works once, and the same answer for a wrong, used or expired code. Sign-in: Better Auth's rate limit. The code and the device token are stored only as hashes. |
+| API headers | `default-src 'none'`, `nosniff`, no referrer, no framing, `no-store` on every answer; `Strict-Transport-Security` only when the public address is https. |
 | HTTP headers | Content-Security-Policy limited to our own origin, `nosniff`, no referrer, no framing, microphone and camera limited to our own origin. |
-| Prompt injection | No language model reads user text in this prototype. At the finale, text inside photos or messages is treated as data, never as instructions. |
+| Prompt injection | No language model reads user text in this prototype, and Kaabil speaks only the 12 fixed messages. At the finale, text inside photos or messages is treated as data, never as instructions. |
+| Logs | Method, path, status and time only: no names, medicine names or transcripts. |
 | Commits | A pre-push guard blocks secrets, personal emails, local paths, env files and attribution lines, and runs typecheck, tests and build. |
 
 ## 9. Known limits
 
 | Limit | Effect |
 |---|---|
-| Family and person screens share one browser | Cross-device alerts need the finale's server and push notifications |
+| The app screens are not connected to the backend yet | The screens keep their state in the browser. The backend works and is tested; today the test console at `/dev` drives it across devices. Connecting the screens is the next step |
+| Plain HTTP in the compose file | A public copy must sit behind HTTPS; a phone on a plain `http://` address cannot use the microphone |
+| Push notifications are not set up | The family sees alerts live only while the dashboard is open |
+| A failed send from the phone is not retried yet | The screen must not say "the family was told" until the server answers |
+| Live events are in memory in one process | A restart closes the streams; clients reconnect. One server is a single point of failure |
 | Web Speech API needs Chrome and a secure origin (`localhost` counts) | Other browsers fall back to buttons and typing |
 | Telugu recognition and the Telugu voice on phones are unmeasured | See the "not verified" list in the PRD |
 | Telugu wording is unreviewed by a native speaker | Treat it as a draft |
