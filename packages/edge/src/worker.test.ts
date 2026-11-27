@@ -50,7 +50,10 @@ describe('the backend address', () => {
     expect(allowedOrigin('http://a-b.trycloudflare.com')).toBeNull(); // not https
     expect(allowedOrigin('https://evil.example.com')).toBeNull(); // not an allowed host
     expect(allowedOrigin('https://trycloudflare.com')).toBeNull(); // the bare suffix is not a tunnel
-    expect(allowedOrigin('https://user:pw@a-b.trycloudflare.com')).toBeNull(); // credentials in the address
+    const withLogin = new URL(ORIGIN); // an address that carries a username and password
+    withLogin.username = 'someone';
+    withLogin.password = 'pw';
+    expect(allowedOrigin(withLogin.href)).toBeNull();
     expect(allowedOrigin('https://a-b.trycloudflare.com:8443')).toBeNull(); // odd port
     expect(allowedOrigin('https://a-b.trycloudflare.com.evil.example')).toBeNull(); // suffix trick
     expect(allowedOrigin('not a url')).toBeNull();
