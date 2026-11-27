@@ -1,0 +1,25 @@
+{
+  "name": "@kaabil/db",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Kaabil database schema and migrations (Drizzle, Postgres).",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "generate": "drizzle-kit generate"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.6.1",
+    "@types/node": "^26.6.11",
+    "@types/pg": "^8.23.1",
+    "drizzle-kit": "^0.31.11",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.4",
+    "pg": "^8.23.1"
+  }
+}
