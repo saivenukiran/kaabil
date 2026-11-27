@@ -1,9 +1,6 @@
 import { useState } from 'react';
-import { acknowledge, deleteAllData, removeMedicine, saveMedicine, setConsent, setPerson } from '../dose/engine';
-import { isValidTime, parseMedicineLine, type ParsedMedicine } from '../dose/medicineParser';
+import { acknowledge, type AlertKind, type AppState, atTimeOfDay, deleteAllData, fmtTime, isValidTime, type ParsedMedicine, parseMedicineLine, removeMedicine, saveMedicine, setConsent, setPerson, slotId } from '@kaabil/core';
 import { update, useAppState } from '../store';
-import { atTimeOfDay, fmtTime, slotId } from '../time';
-import type { AlertKind, AppState } from '../types';
 
 const ALERT_TEXT: Record<AlertKind, string> = {
   missed_dose: 'Missed dose: no answer after two reminders',

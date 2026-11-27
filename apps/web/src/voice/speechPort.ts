@@ -3,7 +3,7 @@
  * Speech API; ScriptedPort replaces it in tests and in the demo without a microphone.
  * Models only turn sound into text. They never decide Yes or No (see words.ts).
  */
-import type { LangCode } from '../types';
+import type { LangCode } from '@kaabil/core';
 
 export type ListenResult =
   | { ok: true; text: string; confidence?: number }

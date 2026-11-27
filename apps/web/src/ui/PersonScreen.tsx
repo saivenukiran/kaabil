@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { dismiss112, hear, press, sos } from '../dose/engine';
-import { BUTTON_WORDS, STATE_WORDS } from '../i18n/messages';
+import { BUTTON_WORDS, dismiss112, hear, press, sos, STATE_WORDS } from '@kaabil/core';
 import { update, useAppState } from '../store';
 import { useVoiceLoop } from './useVoiceLoop';
 

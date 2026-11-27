@@ -4,8 +4,7 @@
  * event. Nothing leaves the device and no audio is ever stored.
  */
 import { useSyncExternalStore } from 'react';
-import { initialState } from './dose/engine';
-import type { AppState } from './types';
+import { type AppState, initialState } from '@kaabil/core';
 
 const KEY = 'kaabil.prototype.state.v1';
 
