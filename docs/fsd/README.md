@@ -29,7 +29,7 @@ A requirement marked **P, built** was checked against the code when this documen
 | # | Chapter | Area ID | Requirements |
 |---|---|---|---|
 | 1 | [Medicine dose by voice](01-dose-by-voice.md) | DOSE | 12 |
-| 2 | [Languages and speech](02-languages-and-speech.md) | LANG | 10 |
+| 2 | [Languages and speech](02-languages-and-speech.md) | LANG | 11 |
 | 3 | [Screens and accessibility](03-screens-and-accessibility.md) | UI | 12 |
 | 4 | [Medicines, alerts and the family view](04-medicines-alerts-family.md) | MED, ALERT | 12 |
 | 5 | [Daily check-in and emergency](05-checkin-and-emergency.md) | CHK | 7 |
@@ -41,7 +41,7 @@ A requirement marked **P, built** was checked against the code when this documen
 | 11 | [Security between the UI and the backend](11-security-ui-to-backend.md) | SEC | 16 |
 | 12 | [Non-functional requirements](12-non-functional.md) | NFR | tables |
 
-106 functional requirements and about 340 acceptance criteria, plus the non-functional tables.
+107 functional requirements and about 350 acceptance criteria, plus the non-functional tables.
 
 ## How a requirement is written
 
@@ -71,7 +71,8 @@ An acceptance criterion is met only if a test or a documented manual step shows 
 | R9 | Telugu and English; a new language is one file | FR-LANG-01, FR-LANG-02, FR-LANG-03 |
 | R10 | Buttons and a text box do the same job | FR-DOSE-09 |
 | R11 | The family sets up medicines by typing a line | FR-MED-01 |
-| R12 | Only text transcripts kept; audio never stored; delete all data | FR-PRIV-03, FR-PRIV-04 |
+| R12 | Only text transcripts kept; the person's audio never stored; delete all data | FR-PRIV-03, FR-PRIV-04 |
+| R13 | A family member records their own voice for Kaabil's fixed sentences | FR-LANG-11 |
 
 PRD sections 3 and 8 name the capabilities the prototype only shows as placeholders; they are specified in chapters 5 to 8. PRD section 5 (safety rules) is in the rules tables at the top of chapters 1, 5, 6, 7 and 8. PRD section 6 (pilot targets) is in chapter 12.
 

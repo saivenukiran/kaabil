@@ -114,10 +114,34 @@ How Kaabil speaks, listens and understands, and how a language is added. Legend:
 | AC-LANG-10-1 | A fixed set of 40 Telugu phrases | read by real elders, including with 65 dB background noise | at least 85% are classified correctly by the word rules (target, not a result) |
 | AC-LANG-10-2 | The same set | read by a person with slurred or slow speech | the failures are recorded, and the buttons are shown at the second failure |
 
+### FR-LANG-11 A family member's own voice — P built (backend and test page), F in the app screens, L cloning
+
+**Description.** A family member records their own voice reading one of Kaabil's fixed sentences, with the person's name and the medicine filled in. The person's phone plays that recording instead of the synthetic voice, only when it is about to say exactly that sentence. A sentence with no recording is spoken as before. In the browser the recording is first trimmed of silence, brought to an even loudness and written as a small mono 16 kHz WAV (at most 15 seconds).
+
+**Business rules**
+- Kaabil still says only its fixed messages (rule L2). A recording can be saved only for a sentence Kaabil will actually say to this person, and it is found only by that exact sentence.
+- Nothing is stored unless the person recording agrees that the recording is stored and played to the person.
+- This is the one place audio is stored. It is the family member's own voice, made on purpose, and can be deleted one by one or all at once (chapter 10).
+- Making synthetic speech in a family member's voice (voice cloning) is **not** built. It would need the voice owner's explicit consent, a provider whose terms allow it, and a clear label on the screen. It is decided separately.
+
+| AC | Given | When | Then |
+|---|---|---|---|
+| AC-LANG-11-1 | A group in Telugu with a medicine | the family opens "My own voice" | each fixed sentence is listed with the person and the medicine filled in, marked recorded or not |
+| AC-LANG-11-2 | The recorder has not agreed | an upload is attempted | it is refused and nothing is stored |
+| AC-LANG-11-3 | The recorder agreed | a recording of a listed sentence is uploaded | it is saved, and the person's phone is told and receives the sentence and the audio |
+| AC-LANG-11-4 | A sentence Kaabil does not say to this person | an upload is attempted | it is refused (404) |
+| AC-LANG-11-5 | A file that is not audio, of a type that is not accepted, empty, or over 1.5 MB | an upload is attempted | it is refused and nothing is stored |
+| AC-LANG-11-6 | A recording exists for the sentence about to be spoken | the person's phone speaks it | the recording plays and the synthetic voice is not used |
+| AC-LANG-11-7 | A recording that cannot play on this phone | the phone speaks the sentence | the synthetic voice speaks it, never silence |
+| AC-LANG-11-8 | A medicine is renamed or its strength changes, so the sentence changes | the plan changes | the old recording is no longer offered or played, and the family sees the new sentence needs recording |
+| AC-LANG-11-9 | A recording made in the browser | before it is uploaded | it is trimmed, evened out and written as mono 16 kHz WAV of at most 15 seconds; a recording with nothing said is refused with a plain message |
+| AC-LANG-11-10 | Another family, or a phone that was revoked | it asks for the recording | it is refused |
+| AC-LANG-11-11 | The family deletes one recording or all of them | the next reminder is spoken | the phone no longer plays them |
+
 ## Verification
 
 | Kind | Where |
 |---|---|
-| Automated | `languages.test.ts` (per-language completeness, the made-up language), `words.test.ts` |
+| Automated | `languages.test.ts` (per-language completeness, the made-up language), `words.test.ts`; for FR-LANG-11 the API tests (consent, validation, exact sentence, other family, retirement), the audio-processing and clip-player tests, the smoke test, and the end-to-end script that records, plays and deletes |
 | Manual | A real phone: which voice is used, whether recognition works in Telugu (not yet verified) |
 | Pilot | FR-LANG-10 |
