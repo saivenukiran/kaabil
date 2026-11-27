@@ -3,19 +3,23 @@ import type { LangCode } from './i18n/languages';
 // The registered language codes. Add a language in i18n/languages, not here.
 export type { LangCode };
 
-export type MessageKey =
-  | 'remind'
-  | 'confirm_log'
-  | 'logged'
-  | 'snooze'
-  | 'already_logged'
-  | 'not_logged'
-  | 'clarify'
-  | 'escalated'
-  | 'emergency'
-  | 'buttons'
-  | 'help'
-  | 'stopped';
+/** Every sentence Kaabil may speak. Kaabil generates no other text. */
+export const MESSAGE_KEYS = [
+  'remind',
+  'confirm_log',
+  'logged',
+  'snooze',
+  'already_logged',
+  'not_logged',
+  'clarify',
+  'escalated',
+  'emergency',
+  'buttons',
+  'help',
+  'stopped',
+] as const;
+
+export type MessageKey = (typeof MESSAGE_KEYS)[number];
 
 export interface Medicine {
   id: string;

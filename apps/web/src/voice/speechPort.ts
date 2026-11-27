@@ -3,7 +3,7 @@
  * Speech API; ScriptedPort replaces it in tests and in the demo without a microphone.
  * Models only turn sound into text. They never decide Yes or No (see words.ts).
  */
-import { getLanguage, type LangCode } from '@kaabil/core';
+import { getLanguage, pickVoice, type LangCode, type VoiceInfo } from '@kaabil/core';
 
 export type ListenResult =
   | { ok: true; text: string; confidence?: number }
@@ -18,9 +18,6 @@ export interface SpeechPort {
   /** Stops listening (resolves a pending listen as "cancelled") and stops speaking. */
   cancel(): void;
 }
-
-/** The language part of the locale ("te" of "te-IN"), used to find a matching voice. */
-const voiceLang = (lang: LangCode) => getLanguage(lang).locale.split('-')[0]?.toLowerCase() ?? lang;
 
 interface RecognitionEventLike {
   results: ArrayLike<ArrayLike<{ transcript: string; confidence: number }>>;
@@ -47,9 +44,16 @@ export class WebSpeechPort implements SpeechPort {
   readonly kind = 'web-speech' as const;
   private stopListening: (() => void) | null = null;
 
+  /** The installed voice Kaabil will use for a language, or undefined when there is none. */
+  voiceFor(lang: LangCode): SpeechSynthesisVoice | undefined {
+    if (!('speechSynthesis' in window)) return undefined;
+    const voices = window.speechSynthesis.getVoices();
+    const picked: VoiceInfo | undefined = pickVoice(voices, getLanguage(lang).locale);
+    return picked ? voices.find((v) => v.name === picked.name && v.lang === picked.lang) : undefined;
+  }
+
   hasVoice(lang: LangCode): boolean {
-    if (!('speechSynthesis' in window)) return false;
-    return window.speechSynthesis.getVoices().some((v) => v.lang.toLowerCase().startsWith(voiceLang(lang)));
+    return this.voiceFor(lang) !== undefined;
   }
 
   speak(text: string, lang: LangCode): Promise<void> {
@@ -60,7 +64,7 @@ export class WebSpeechPort implements SpeechPort {
       const u = new SpeechSynthesisUtterance(text);
       u.lang = getLanguage(lang).locale;
       u.rate = 0.85;
-      const voice = synth.getVoices().find((v) => v.lang.toLowerCase().startsWith(voiceLang(lang)));
+      const voice = this.voiceFor(lang);
       if (voice) u.voice = voice;
       let done = false;
       const finish = () => {

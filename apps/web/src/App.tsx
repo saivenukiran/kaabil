@@ -4,15 +4,17 @@ import { FamilyScreen } from './ui/FamilyScreen';
 import { PersonScreen } from './ui/PersonScreen';
 import { Roadmap } from './ui/Roadmap';
 import { TestPanel } from './ui/TestPanel';
+import { VoiceCheck } from './ui/VoiceCheck';
 import { resetDemo, update, useAppState } from './store';
 
-type Tab = 'person' | 'family' | 'split' | 'tests' | 'roadmap';
+type Tab = 'person' | 'family' | 'split' | 'tests' | 'voice' | 'roadmap';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'person', label: 'Person' },
   { id: 'family', label: 'Family' },
   { id: 'split', label: 'Side by side' },
   { id: 'tests', label: 'Test panel' },
+  { id: 'voice', label: 'Voice check' },
   { id: 'roadmap', label: 'Roadmap' },
 ];
 
@@ -48,6 +50,7 @@ export function App() {
         {(tab === 'person' || tab === 'split') && <PersonScreen />}
         {(tab === 'family' || tab === 'split') && <FamilyScreen />}
         {tab === 'tests' && <TestPanel />}
+        {tab === 'voice' && <VoiceCheck />}
         {tab === 'roadmap' && <Roadmap />}
       </main>
     </div>
