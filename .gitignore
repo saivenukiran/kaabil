@@ -14,3 +14,4 @@ Thumbs.db
 .idea/
 .vitest/
 test-results/
+.demo-account.json
