@@ -70,9 +70,18 @@ export function parseSignal(x: unknown): Signal | null {
   }
 }
 
-/** A hard-to-guess id for one call: 16 hex characters from the given random source. */
-export function newCallId(random: () => number = Math.random): string {
+/**
+ * An id for one call: 16 hex characters. With no random source given it uses the platform's secure
+ * one (`crypto.getRandomValues`), so an id cannot be guessed by someone watching other calls; a
+ * source can be passed in for tests. Math.random is only the last resort where no secure source exists.
+ */
+export function newCallId(random?: () => number): string {
+  const secure = (globalThis as { crypto?: { getRandomValues?: (a: Uint8Array) => Uint8Array } }).crypto;
+  if (!random && secure?.getRandomValues) {
+    return [...secure.getRandomValues(new Uint8Array(8))].map((b) => b.toString(16).padStart(2, '0')).join('');
+  }
+  const next = random ?? Math.random;
   let id = '';
-  for (let i = 0; i < 16; i++) id += Math.floor(random() * 16).toString(16);
+  for (let i = 0; i < 16; i++) id += Math.floor(next() * 16).toString(16);
   return id;
 }

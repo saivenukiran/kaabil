@@ -184,4 +184,14 @@ describe('small helpers', () => {
     expect(parseSignal({ kind: 'accept', callId: id, from: 'person' })).not.toBeNull();
     expect(newCallId(() => 0)).toBe('0000000000000000');
   });
+  it('uses the secure random source by default, not Math.random', () => {
+    const real = Math.random;
+    Math.random = () => 0; // if the default used this, every id would be identical
+    try {
+      const ids = new Set(Array.from({ length: 500 }, () => newCallId()));
+      expect(ids.size).toBe(500);
+    } finally {
+      Math.random = real;
+    }
+  });
 });
