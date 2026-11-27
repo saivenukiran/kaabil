@@ -138,7 +138,42 @@ export type AlertResult = z.infer<typeof AlertResultSchema>;
 export const DoseListSchema = z.object({ doses: z.array(DoseSchema) }).strict();
 export const AlertListSchema = z.object({ alerts: z.array(AlertSchema) }).strict();
 
-/** Live events. Family streams get dose, alert, plan, device and ping; device streams get plan, remind and ping. */
+/**
+ * The messages two phones send each other to set up a call (signalling). The server checks every one against
+ * this schema before passing it on, and again the receiving phone checks it. The shapes and limits match
+ * `parseSignal` in @kaabil/core, which a test keeps in step.
+ */
+const CallIdSchema = z.string().regex(/^[A-Za-z0-9-]{8,64}$/);
+const CallRoleSchema = z.enum(['person', 'family']);
+const SdpSchema = z.string().min(1).max(20_000);
+const IceCandidateSchema = z
+  .object({ candidate: z.string().max(2000), sdpMid: z.string().max(64).nullable(), sdpMLineIndex: z.number().int().min(0).max(63).nullable() })
+  .strict();
+
+export const CallSignalSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('ring'), callId: CallIdSchema, from: CallRoleSchema, withVideo: z.boolean() }).strict(),
+  z.object({ kind: z.literal('accept'), callId: CallIdSchema, from: CallRoleSchema }).strict(),
+  z.object({ kind: z.literal('decline'), callId: CallIdSchema, from: CallRoleSchema, reason: z.enum(['declined', 'busy']) }).strict(),
+  z.object({ kind: z.literal('offer'), callId: CallIdSchema, from: CallRoleSchema, sdp: SdpSchema }).strict(),
+  z.object({ kind: z.literal('answer'), callId: CallIdSchema, from: CallRoleSchema, sdp: SdpSchema }).strict(),
+  z.object({ kind: z.literal('ice'), callId: CallIdSchema, from: CallRoleSchema, candidate: IceCandidateSchema.nullable() }).strict(),
+  z.object({ kind: z.literal('hangup'), callId: CallIdSchema, from: CallRoleSchema }).strict(),
+]);
+export type CallSignal = z.infer<typeof CallSignalSchema>;
+
+/** The servers a phone uses to find a path to the other phone: a public STUN server, and a relay (TURN) when one is configured. */
+export const IceServersSchema = z
+  .object({
+    iceServers: z.array(
+      z
+        .object({ urls: z.array(z.string().max(200)).min(1).max(12), username: z.string().max(500).optional(), credential: z.string().max(500).optional() })
+        .strict(),
+    ),
+  })
+  .strict();
+export type IceServers = z.infer<typeof IceServersSchema>;
+
+/** Live events. Family streams get dose, alert, plan, device, voice, call and ping; device streams get plan, remind, voice, call and ping. */
 export const EventSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('dose'), dose: DoseSchema }).strict(),
   z.object({ type: z.literal('alert'), alert: AlertSchema }).strict(),
@@ -146,6 +181,7 @@ export const EventSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('device'), device: DeviceSchema.nullable(), removedId: z.string().optional() }).strict(),
   z.object({ type: z.literal('remind'), medicineId: z.string().optional(), at: z.number() }).strict(),
   z.object({ type: z.literal('voice'), at: z.number() }).strict(),
+  z.object({ type: z.literal('call'), signal: CallSignalSchema }).strict(),
   z.object({ type: z.literal('ping'), at: z.number() }).strict(),
 ]);
 export type ServerEvent = z.infer<typeof EventSchema>;
