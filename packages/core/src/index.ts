@@ -7,6 +7,7 @@ export * from './i18n/languages';
 export * from './i18n/messages';
 export * from './i18n/packs';
 export * from './voice/words';
+export * from './voice/voiceReport';
 export * from './dose/dialogue';
 export * from './dose/engine';
 export * from './dose/medicineParser';
