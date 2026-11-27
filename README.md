@@ -53,6 +53,7 @@ The **Test panel** tab runs 12 scripted scenarios and shows expected versus actu
 |---|---|
 | [docs/PRD.md](docs/PRD.md) | Problem, users, requirements, how we will know it works, what is not verified |
 | [docs/SPECS.md](docs/SPECS.md) | Architecture, the dose state machine, word rules, timings, tests, security |
+| [docs/fsd/](docs/fsd/README.md) | Functional specification: every feature with acceptance criteria, prototype vs finale vs later, security between the UI and the backend |
 
 ## How it is built
 
