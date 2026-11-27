@@ -17,6 +17,8 @@ Status words used in each requirement's title:
 | Word | Meaning |
 |---|---|
 | built | Works in this repository and is covered by a test or by a manual step in the README |
+| built (backend) | Implemented in the backend and covered by its tests (and the smoke test and end-to-end scripts); the app screens do not use it yet |
+| partly built | The title says what is built; the rest is still a plan |
 | placeholder | A screen exists, is labelled as a placeholder, and does nothing real |
 | designed, not built | Drawn on the design canvas; no code yet |
 | to be verified | Written down, but not yet measured on the app |
