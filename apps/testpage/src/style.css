@@ -35,3 +35,8 @@ a.call { display: inline-block; padding: 14px 22px; background: var(--bad); colo
 .sentence .text { font-size: 15px; }
 .sentence .key { font-size: 12px; color: #77736a; }
 .log { max-height: 200px; overflow: auto; font: 12px/1.4 ui-monospace, monospace; background: #1c1b19; color: #e6e2d6; padding: 8px; border-radius: 8px; white-space: pre-wrap; }
+.callbox { padding: 4px 0; }
+.call-state { font-size: 17px; font-weight: 600; margin: 4px 0; }
+.call-state[data-phase="connected"] { color: var(--ok); }
+.call-state[data-phase="ended"] { color: #55524a; }
+.call-video { width: 100%; max-height: 260px; background: #111; border-radius: 12px; margin-top: 6px; }
