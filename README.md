@@ -52,6 +52,10 @@ The **Test panel** tab runs 13 scripted scenarios and shows expected versus actu
 - `src/dose/dialogue.ts` is a pure state machine for the dose conversation, with no clock, storage or speech in it. `src/voice/words.ts` holds the Yes/No rules. Telugu negation is a verb ending, so the rules match endings such as `లేదు`, and any No beats any Yes.
 - All speech goes through one `SpeechPort` interface (Web Speech API in the browser, a scripted fake in tests).
 
+## Before you push
+
+`npm ci` installs a pre-push guard (`scripts/hooks/pre-push`). Before every push it checks the commits and runs typecheck, tests, the production build and, where Docker exists, the compose file and image build. It blocks pushes that contain secrets, email addresses, local paths, attribution trailers or env files, and direct pushes to `main`. GitHub Actions is not used. Run the same checks by hand with `npm run check`.
+
 ## Team
 
 See [CONTRIBUTORS.md](CONTRIBUTORS.md).
