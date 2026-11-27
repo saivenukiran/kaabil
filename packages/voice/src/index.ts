@@ -2,3 +2,4 @@
 export * from './speechPort';
 export * from './clipPort';
 export * from './voiceLoop';
+export * from './audioProcess';
