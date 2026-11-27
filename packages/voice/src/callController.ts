@@ -55,6 +55,8 @@ export interface PeerLike {
   addTrack(track: TrackLike, stream: StreamLike): unknown;
   addTransceiver(kind: 'audio' | 'video', init: { direction: 'recvonly' }): unknown;
   close(): void;
+  /** Connection statistics, as RTCPeerConnection.getStats gives them. Optional: a missing one reads as no data. */
+  getStats?(): Promise<{ forEach(cb: (stat: { type?: string; kind?: string; bytesReceived?: number; totalAudioEnergy?: number }) => void): void }>;
   onicecandidate: ((e: { candidate: { candidate: string; sdpMid?: string | null; sdpMLineIndex?: number | null } | null }) => void) | null;
   ontrack: ((e: { streams: readonly StreamLike[] }) => void) | null;
   onconnectionstatechange: (() => void) | null;
@@ -86,6 +88,9 @@ export interface CallView {
   /** A plain sentence about why a call failed, for the screen. */
   note: string;
 }
+
+/** Growth in `totalAudioEnergy` over one second that counts as someone speaking (a quiet room is about a hundred times less). */
+export const HEARING_ENERGY = 0.0002;
 
 const FALLBACK_ICE: IceServerInfo[] = [{ urls: ['stun:stun.cloudflare.com:3478'] }];
 const MAX_QUEUED_CANDIDATES = 100;
@@ -185,6 +190,28 @@ export class CallController {
     this.muted = muted;
     for (const t of this.local?.getTracks() ?? []) if (t.kind === 'audio') t.enabled = !muted;
     this.notify();
+  }
+
+  /**
+   * What has arrived of the other side's sound so far: bytes (packets keep coming even when they are silent, for example when the
+   * other side is muted) and energy (it rises only when there is sound). Both 0 when none, or when it cannot be read.
+   * Compare two readings: if the energy grew by `HEARING_ENERGY` or more, someone was speaking.
+   */
+  async receivedAudio(): Promise<{ bytes: number; energy: number }> {
+    const pc = this.pc;
+    const none = { bytes: 0, energy: 0 };
+    if (!pc?.getStats) return none;
+    try {
+      const got = { bytes: 0, energy: 0 };
+      (await pc.getStats()).forEach((s) => {
+        if (s.type !== 'inbound-rtp' || s.kind !== 'audio') return;
+        if (typeof s.bytesReceived === 'number') got.bytes += s.bytesReceived;
+        if (typeof s.totalAudioEnergy === 'number') got.energy += s.totalAudioEnergy;
+      });
+      return got;
+    } catch {
+      return none;
+    }
   }
 
   // ---- what arrives from the other side

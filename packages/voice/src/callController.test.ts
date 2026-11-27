@@ -28,6 +28,7 @@ class FakePeer implements PeerLike {
   transceivers: string[] = [];
   candidates: unknown[] = [];
   closed = false;
+  getStats?: PeerLike['getStats'];
   onicecandidate: PeerLike['onicecandidate'] = null;
   ontrack: PeerLike['ontrack'] = null;
   onconnectionstatechange: PeerLike['onconnectionstatechange'] = null;
@@ -444,5 +445,28 @@ describe('sending in order, and telling the screen', () => {
     expect(w.family.c.view().state.phase).toBe('connected');
     expect(w.family.peers).toHaveLength(2);
     expect(w.family.c.view().callId).not.toBe(w.family.sent[0] && (w.family.sent[0] as { callId: string }).callId);
+  });
+});
+
+describe('reading what has arrived', () => {
+  it('sums the audio counters, ignores other kinds of statistics, and reads 0 when the connection cannot say', async () => {
+    const w = world();
+    expect(await w.family.c.receivedAudio()).toEqual({ bytes: 0, energy: 0 }); // no connection yet
+    await connectedCall(w);
+    const peer = w.family.peers[0]!;
+    expect(await w.family.c.receivedAudio()).toEqual({ bytes: 0, energy: 0 }); // the fake peer has no statistics
+    peer.getStats = async () => ({
+      forEach: (cb) => {
+        cb({ type: 'inbound-rtp', kind: 'audio', bytesReceived: 1000, totalAudioEnergy: 0.5 });
+        cb({ type: 'inbound-rtp', kind: 'video', bytesReceived: 99999, totalAudioEnergy: 9 });
+        cb({ type: 'outbound-rtp', kind: 'audio', bytesReceived: 77 });
+        cb({ type: 'inbound-rtp', kind: 'audio', bytesReceived: 24 });
+      },
+    });
+    expect(await w.family.c.receivedAudio()).toEqual({ bytes: 1024, energy: 0.5 });
+    peer.getStats = async () => {
+      throw new Error('closed');
+    };
+    expect(await w.family.c.receivedAudio()).toEqual({ bytes: 0, energy: 0 });
   });
 });
