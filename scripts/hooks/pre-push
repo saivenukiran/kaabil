@@ -89,6 +89,7 @@ fi
 step "5. Typecheck"; npm run --silent typecheck || fail "typecheck failed"
 step "6. Unit tests"; npm test --silent || fail "tests failed"
 step "7. Production build"; npm run --silent build || fail "build failed"
+step "7b. Numbers in the docs match the code"; node scripts/check-docs.mjs || fail "a number in the docs is out of date (see the lines above)"
 
 step "8. Docker (compose file and image)"
 if [ "${KAABIL_SKIP_DOCKER:-}" = "1" ]; then
