@@ -11,6 +11,7 @@ import { schema } from '@kaabil/db';
 import { createAlert } from '../alertsService';
 import { HttpError, parseBody, unauthorized } from '../http';
 import { deviceDto, doseDto, listMedicines, planFor } from '../repo';
+import { pollAnswer } from './poll';
 import { bearer, newDeviceToken, newId, RateLimiter, sha256 } from '../security';
 import { deviceClips, getClipAudio } from '../voiceClips';
 import type { Deps } from '../types';
@@ -115,6 +116,12 @@ export function deviceRoutes(d: Deps) {
         off();
       }
     });
+  });
+
+  // The same events as the stream, for a phone behind a proxy that holds streams back.
+  app.get('/poll', async (c) => {
+    c.header('Cache-Control', 'no-store');
+    return c.json(await pollAnswer(d, c.get('device').groupId, 'device', c.req.query(), c.req.raw.signal));
   });
 
   // The family's recordings: the phone lists them (with the sentence each one says) and fetches the audio.
