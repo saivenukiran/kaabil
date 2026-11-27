@@ -18,6 +18,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "check": "bash scripts/hooks/pre-push --local",
+    "smoke": "node scripts/smoke.mjs",
     "prepare": "node scripts/prepare.mjs"
   },
   "devDependencies": {
