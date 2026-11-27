@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { SCENARIOS, runScenario, sameOutcome } from '../dose/scenarios';
+import { runScenario, sameOutcome, SCENARIOS } from '@kaabil/core';
 
 const fmt = (o: ReturnType<typeof runScenario>) =>
   `${o.phase}, doses ${o.doses}, alerts [${o.alerts.join(', ')}]${o.show112 ? ', 112' : ''}${o.showButtons ? ', buttons' : ''}, last: ${o.lastSay}`;

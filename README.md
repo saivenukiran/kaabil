@@ -46,10 +46,19 @@ The **Test panel** tab runs 13 scripted scenarios and shows expected versus actu
 | Cloud Indic speech, vision model | "Key not set" placeholders |
 | Eight more language packs | Data only, not reviewed by native speakers |
 
+## Read more
+
+| Document | For |
+|---|---|
+| [PRD.md](PRD.md) | Problem, users, requirements, how we will know it works, what is not verified |
+| [SPECS.md](SPECS.md) | Architecture, the dose state machine, word rules, timings, tests, security |
+
 ## How it is built
 
+A [Turborepo](https://turborepo.dev) monorepo (npm workspaces): `apps/web` is the React app, `packages/core` is the pure logic that any future app can reuse.
+
 - React 19, TypeScript (strict), Vite, Vitest. No backend: state lives in the browser (`localStorage`), and two tabs stay in sync.
-- `src/dose/dialogue.ts` is a pure state machine for the dose conversation, with no clock, storage or speech in it. `src/voice/words.ts` holds the Yes/No rules. Telugu negation is a verb ending, so the rules match endings such as `లేదు`, and any No beats any Yes.
+- `packages/core/src/dose/dialogue.ts` is a pure state machine for the dose conversation, with no clock, storage or speech in it. `packages/core/src/voice/words.ts` holds the Yes/No rules. Telugu negation is a verb ending, so the rules match endings such as `లేదు`, and any No beats any Yes.
 - All speech goes through one `SpeechPort` interface (Web Speech API in the browser, a scripted fake in tests).
 
 ## Before you push

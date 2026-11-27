@@ -1,4 +1,4 @@
-import { PHRASE_PACKS } from '../i18n/packs';
+import { PHRASE_PACKS } from '@kaabil/core';
 import { cloudSpeechStatus } from '../voice/cloudSpeech';
 
 type Status = 'works' | 'placeholder';

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { forceButtons, hear, silence } from '../dose/engine';
-import { render } from '../i18n/messages';
+import { forceButtons, hear, render, silence } from '@kaabil/core';
 import { getState, update, useAppState } from '../store';
 import { createPort } from '../voice/speechPort';
 

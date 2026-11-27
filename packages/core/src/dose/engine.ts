@@ -46,8 +46,10 @@ export function deleteAllData(state: AppState): AppState {
   };
 }
 
+// AppState is plain JSON (it is saved as JSON), so a JSON round trip is a full copy.
+// structuredClone is avoided on purpose: core must run on any JavaScript engine, not only browsers.
 function clone(state: AppState): AppState {
-  return structuredClone(state);
+  return JSON.parse(JSON.stringify(state)) as AppState;
 }
 
 function say(w: AppState, key: MessageKey): void {

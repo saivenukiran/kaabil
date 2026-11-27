@@ -1,12 +1,10 @@
 import { useState } from 'react';
-import { advance, jumpTo, setLang } from './dose/engine';
+import { advance, fmtTime, jumpTo, type LangCode, setLang } from '@kaabil/core';
 import { FamilyScreen } from './ui/FamilyScreen';
 import { PersonScreen } from './ui/PersonScreen';
 import { Roadmap } from './ui/Roadmap';
 import { TestPanel } from './ui/TestPanel';
 import { resetDemo, update, useAppState } from './store';
-import { fmtTime } from './time';
-import type { LangCode } from './types';
 
 type Tab = 'person' | 'family' | 'split' | 'tests' | 'roadmap';
 
