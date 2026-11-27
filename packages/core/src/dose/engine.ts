@@ -5,6 +5,7 @@
  */
 import { detectLang, interpret, type Intent } from '../voice/words';
 import { render } from '../i18n/messages';
+import { DEFAULT_LANG, isLangCode } from '../i18n/languages';
 import { atTimeOfDay, dayKey, MINUTE, slotId } from '../time';
 import type { AlertKind, AppState, MessageKey } from '../types';
 import { newSession, step, type Effect, type StepContext, type StepInput, type StepResult } from './dialogue';
@@ -18,7 +19,7 @@ export function initialState(nowMs: number = Date.now()): AppState {
   d.setHours(7, 55, 0, 0); // five minutes before the first dose
   return {
     v: 1,
-    lang: 'te',
+    lang: DEFAULT_LANG,
     person: { name: 'Amma', address: 'అమ్మ' },
     medicines: [{ id: 'm1', name: 'Metformin', strength: '500', times: ['08:00', '21:00'] }],
     consent: { missedDose: true, emergency: true },
@@ -172,7 +173,8 @@ export function hear(state: AppState, text: string, via: 'voice' | 'button' = 'v
   const w = clone(state);
   const t = text.trim();
   if (t === '') return w;
-  w.lang = detectLang(t, w.lang);
+  const detected = detectLang(t, w.lang);
+  if (isLangCode(detected)) w.lang = detected;
   w.transcripts.push({ atMs: w.clockMs, who: 'person', text: t });
   dispatch(w, interpret(t), via);
   return w;

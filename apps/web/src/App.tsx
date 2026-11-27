@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { advance, fmtTime, jumpTo, type LangCode, setLang } from '@kaabil/core';
+import { advance, fmtTime, jumpTo, LANGUAGES, setLang } from '@kaabil/core';
 import { FamilyScreen } from './ui/FamilyScreen';
 import { PersonScreen } from './ui/PersonScreen';
 import { Roadmap } from './ui/Roadmap';
@@ -14,12 +14,6 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'split', label: 'Side by side' },
   { id: 'tests', label: 'Test panel' },
   { id: 'roadmap', label: 'Roadmap' },
-];
-
-const LANGS: { id: LangCode; label: string }[] = [
-  { id: 'te', label: 'తెలుగు' },
-  { id: 'hi', label: 'हिन्दी' },
-  { id: 'en', label: 'English' },
 ];
 
 export function App() {
@@ -43,8 +37,8 @@ export function App() {
           <button onClick={() => update((s) => jumpTo(s, '21:00'))}>Jump to 21:00</button>
           <button onClick={resetDemo}>Reset demo</button>
           <span className="langs">
-            {LANGS.map((l) => (
-              <button key={l.id} className={state.lang === l.id ? 'active' : ''} onClick={() => update((s) => setLang(s, l.id))}>{l.label}</button>
+            {LANGUAGES.map((l) => (
+              <button key={l.code} lang={l.code} className={state.lang === l.code ? 'active' : ''} onClick={() => update((s) => setLang(s, l.code))}>{l.nativeName}</button>
             ))}
           </span>
         </div>

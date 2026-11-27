@@ -1,10 +1,10 @@
-import { PHRASE_PACKS } from '@kaabil/core';
+import { LANGUAGES, PHRASE_PACKS } from '@kaabil/core';
 import { cloudSpeechStatus } from '../voice/cloudSpeech';
 
 type Status = 'works' | 'placeholder';
 
 const FLOWS: { name: string; status: Status; note: string }[] = [
-  { name: 'Medicine reminder and dose logging', status: 'works', note: 'Telugu, Hindi and English. Voice, buttons or typing. Missed and double doses alert the family view.' },
+  { name: 'Medicine reminder and dose logging', status: 'works', note: `${LANGUAGES.map((l) => l.name).join(' and ')}. Voice, buttons or typing. Missed and double doses alert the family view.` },
   { name: 'Family setup: "Metformin 500, 1-0-1"', status: 'works', note: 'Parsed into times, saved only after the family confirms.' },
   { name: 'Emergency phrases and SOS', status: 'works', note: '112 call button and a family alert (with consent). Never diagnoses.' },
   { name: 'Pill check by camera', status: 'placeholder', note: 'Needs a vision model and a key. Planned output: {drug, strength, confidence, unreadable}. Strength must match exactly.' },
@@ -37,7 +37,7 @@ export function Roadmap() {
       </div>
       <div className="card">
         <h3>Languages</h3>
-        <p>Telugu (primary), Hindi and English work in the dose flow. Phrase packs for eight more languages exist as data only, unreviewed by native speakers:</p>
+        <p>{LANGUAGES.map((l) => l.name).join(' and ')} work in the dose flow; a new language is one file (see the README in the languages folder). Phrase packs for {PHRASE_PACKS.length} more exist as data only, unreviewed by native speakers:</p>
         <table>
           <thead><tr><th>Language</th><th>Yes</th><th>No</th><th>1 to 5</th></tr></thead>
           <tbody>

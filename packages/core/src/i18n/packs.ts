@@ -1,7 +1,9 @@
 /**
- * Phrase packs for the eight further languages: Yes and No words and the numbers 1 to 5.
+ * Phrase packs for further languages: Yes and No words and the numbers 1 to 5.
  * PLACEHOLDER DATA. These are not used by the dose logic yet and have not been reviewed
  * by native speakers. They exist so the language list and the data shape are in place.
+ * To turn a pack into a working language, write `languages/<code>.ts`, add it to LANGUAGES,
+ * and delete its row here (see languages/README.md).
  */
 export interface PhrasePack {
   code: string;
@@ -13,6 +15,7 @@ export interface PhrasePack {
 }
 
 export const PHRASE_PACKS: PhrasePack[] = [
+  { code: 'hi', name: 'Hindi', yes: 'हाँ', no: 'नहीं', numbers: ['एक', 'दो', 'तीन', 'चार', 'पाँच'], status: 'placeholder' },
   { code: 'ta', name: 'Tamil', yes: 'ஆமாம்', no: 'இல்லை', numbers: ['ஒன்று', 'இரண்டு', 'மூன்று', 'நான்கு', 'ஐந்து'], status: 'placeholder' },
   { code: 'kn', name: 'Kannada', yes: 'ಹೌದು', no: 'ಇಲ್ಲ', numbers: ['ಒಂದು', 'ಎರಡು', 'ಮೂರು', 'ನಾಲ್ಕು', 'ಐದು'], status: 'placeholder' },
   { code: 'ml', name: 'Malayalam', yes: 'അതെ', no: 'ഇല്ല', numbers: ['ഒന്ന്', 'രണ്ട്', 'മൂന്ന്', 'നാല്', 'അഞ്ച്'], status: 'placeholder' },

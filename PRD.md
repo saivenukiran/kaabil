@@ -33,7 +33,7 @@ One voice companion, so the person never learns four apps. The person talks to K
 | Link guard | A risky link opens nothing until the person confirms twice. | Placeholder |
 | Send to family | "Tell my son the medicine is finished"; the reply is read aloud. | Placeholder |
 
-Languages: Telugu first; Hindi and English complete. Eight more Indian languages (Tamil, Kannada, Malayalam, Marathi, Bengali, Gujarati, Punjabi, Odia) are data-only phrase packs, not yet reviewed by native speakers.
+Languages: the prototype works in Telugu (first) and English. Every word in a language lives in one file, so adding a language is one new file (see `packages/core/src/i18n/languages/README.md`). Nine more Indian languages (Hindi, Tamil, Kannada, Malayalam, Marathi, Bengali, Gujarati, Punjabi, Odia) are data-only phrase packs, not yet reviewed by native speakers.
 
 Platform: a mobile-first web app (PWA). Native apps come later, because only a native app can guard links inside other apps or wake in the background.
 
@@ -49,7 +49,7 @@ Platform: a mobile-first web app (PWA). Native apps come later, because only a n
 | R6 | No answer: repeat once at 10 minutes, alert the family at 20 minutes (with consent). | `no-answer-alert` |
 | R7 | A second claim for a dose within 4 hours is refused, and the family is flagged. | `claimed-again` |
 | R8 | Emergency words ("ఛాతీ నొప్పి", chest pain) show a 112 call button and alert the family. Kaabil never diagnoses. | `emergency` |
-| R9 | Works in Telugu, Hindi and English, and replies in the language the person used. | `hindi`, `english` |
+| R9 | Works in Telugu and English, and replies in the language the person used. A new language needs one file and passes the completeness test. | `english`, `languages.test.ts` |
 | R10 | Works without a microphone or a Telugu voice: Yes/No buttons and a text box do the same job. | Manual: README, step 6 |
 | R11 | The family sets up medicines by typing a line such as `Metformin 500, 1-0-1` (morning and night). | Unit tests for the parser |
 | R12 | Only text transcripts are kept, in the browser. Audio is never stored. "Delete all data" erases everything. | Code review: `deleteAllData` |
@@ -82,13 +82,13 @@ Main risk: speech recognition is weakest for the people we serve (slurred or slo
 
 | Area | Status |
 |---|---|
-| Medicine reminder, spoken confirmation, dose log | Works in Telugu, Hindi, English |
-| Yes/No by word rules | Works; 59 automated tests pass |
+| Medicine reminder, spoken confirmation, dose log | Works in Telugu and English |
+| Yes/No by word rules | Works; 80 automated tests pass |
 | Missed-dose, repeated-dose and emergency alerts | Work on the family view in one browser; push notifications are not set up |
 | Family setup from text | Works |
 | Pill check, daily check-in, link guard, send to family | Placeholders |
 | Cloud Indic speech and the vision model | "Key not set" placeholders; the prototype needs no keys |
-| Eight more language packs | Data only |
+| Nine more language packs (Hindi and eight others) | Data only |
 
 **Not verified yet** (we say so rather than guess):
 

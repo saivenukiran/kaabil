@@ -1,0 +1,52 @@
+import { defineLanguage } from '../language';
+
+export const en = defineLanguage({
+  code: 'en',
+  name: 'English',
+  nativeName: 'English',
+  locale: 'en-IN',
+  scripts: [], // Latin script: Latin-only text keeps the current language
+  review: 'native-reviewed',
+  messages: {
+    remind: (v) => `${v.address}, ${v.name} ${v.strength}, time for one tablet.`,
+    confirm_log: () => 'Shall I record it?',
+    logged: () => 'Recorded.',
+    snooze: () => 'I will remind you again in ten minutes.',
+    already_logged: () => 'Already recorded.',
+    not_logged: () => 'Okay, not recorded.',
+    clarify: () => 'I did not hear that well. Did you take it?',
+    escalated: () => 'I have told your family.',
+    emergency: () => 'This may be an emergency. Call 112.',
+    buttons: () => 'Please use the buttons.',
+    help: () => 'Say: taken, not yet, yes, or no.',
+    stopped: () => 'Okay, stopped.',
+  },
+  stateWords: { listening: 'Listening', thinking: 'Thinking', done: 'Done', ready: 'Ready' },
+  buttonWords: { yes: 'Yes', no: 'No', start: 'Start' },
+  words: {
+    yes: ['yes', 'yeah', 'yep', 'ok', 'okay'],
+    no: ['no', 'nope', 'not', 'never', 'dont'],
+    noSuffix: [],
+    claim: ['taken', 'took', 'swallowed'],
+    later: ['later', 'yet'],
+    stop: ['stop'],
+    help: ['help'],
+    repeat: ['repeat', 'say again'],
+    emergency: ['chest pain', 'i fell', 'fell down', 'breathe'],
+  },
+  // The complete set of person-screen strings. Other languages fall back to these.
+  ui: {
+    startHint: 'Tap once so the phone can speak and listen',
+    tryHint: 'Press “Advance demo time” to reach 08:00.',
+    typedLabel: 'If voice fails, type or dictate (Wispr Flow works here)',
+    typedPlaceholder: 'I took it',
+    send: 'Send',
+    sos: 'SOS',
+    disclaimer: 'Not a medical device',
+    close: 'Close',
+    speakAria: 'Speak',
+    micBlocked: 'Microphone is blocked. Use the buttons or type.',
+    micUnsupported: 'This browser cannot listen. Use the buttons or type.',
+    noVoice: (name) => `No ${name} voice on this device. The words are shown on screen instead.`,
+  },
+});

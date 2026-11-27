@@ -1,4 +1,7 @@
-export type LangCode = 'te' | 'hi' | 'en';
+import type { LangCode } from './i18n/languages';
+
+// The registered language codes. Add a language in i18n/languages, not here.
+export type { LangCode };
 
 export type MessageKey =
   | 'remind'

@@ -3,7 +3,7 @@
  * Speech API; ScriptedPort replaces it in tests and in the demo without a microphone.
  * Models only turn sound into text. They never decide Yes or No (see words.ts).
  */
-import type { LangCode } from '@kaabil/core';
+import { getLanguage, type LangCode } from '@kaabil/core';
 
 export type ListenResult =
   | { ok: true; text: string; confidence?: number }
@@ -19,7 +19,8 @@ export interface SpeechPort {
   cancel(): void;
 }
 
-const LOCALES: Record<LangCode, string> = { te: 'te-IN', hi: 'hi-IN', en: 'en-IN' };
+/** The language part of the locale ("te" of "te-IN"), used to find a matching voice. */
+const voiceLang = (lang: LangCode) => getLanguage(lang).locale.split('-')[0]?.toLowerCase() ?? lang;
 
 interface RecognitionEventLike {
   results: ArrayLike<ArrayLike<{ transcript: string; confidence: number }>>;
@@ -48,7 +49,7 @@ export class WebSpeechPort implements SpeechPort {
 
   hasVoice(lang: LangCode): boolean {
     if (!('speechSynthesis' in window)) return false;
-    return window.speechSynthesis.getVoices().some((v) => v.lang.toLowerCase().startsWith(lang));
+    return window.speechSynthesis.getVoices().some((v) => v.lang.toLowerCase().startsWith(voiceLang(lang)));
   }
 
   speak(text: string, lang: LangCode): Promise<void> {
@@ -57,9 +58,9 @@ export class WebSpeechPort implements SpeechPort {
       if (!('speechSynthesis' in window)) return resolve();
       const synth = window.speechSynthesis;
       const u = new SpeechSynthesisUtterance(text);
-      u.lang = LOCALES[lang];
+      u.lang = getLanguage(lang).locale;
       u.rate = 0.85;
-      const voice = synth.getVoices().find((v) => v.lang.toLowerCase().startsWith(lang));
+      const voice = synth.getVoices().find((v) => v.lang.toLowerCase().startsWith(voiceLang(lang)));
       if (voice) u.voice = voice;
       let done = false;
       const finish = () => {
@@ -81,7 +82,7 @@ export class WebSpeechPort implements SpeechPort {
     if (!Ctor) return Promise.resolve({ ok: false, reason: 'unsupported' });
     return new Promise((resolve) => {
       const rec = new Ctor();
-      rec.lang = LOCALES[opts.lang];
+      rec.lang = getLanguage(opts.lang).locale;
       rec.interimResults = false;
       rec.maxAlternatives = 1;
       rec.continuous = false;

@@ -2,6 +2,8 @@
 // Any app (web today, a phone app at the finale) imports from here and nowhere deeper.
 export * from './types';
 export * from './time';
+export * from './i18n/language';
+export * from './i18n/languages';
 export * from './i18n/messages';
 export * from './i18n/packs';
 export * from './voice/words';
