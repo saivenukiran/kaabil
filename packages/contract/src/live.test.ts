@@ -38,6 +38,22 @@ function harness(respond: (url: string, n: number) => Response | Promise<Respons
 }
 
 describe('live events when the stream is held back', () => {
+  it('does not lose an event that happened while the stream was silent', async () => {
+    const polls: string[] = [];
+    const h = harness((url) => {
+      if (url === '/events') return silentStream();
+      polls.push(url);
+      if (url === '/poll') return json({ events: [], last: 10 }); // the starting point, noted before the wait
+      if (url === '/poll?after=10&wait=1') return json({ events: [{ id: 11, event: plan(5) }], last: 11 }); // published during the wait
+      return json({ events: [], last: 11 });
+    });
+    await tick(300);
+    h.ctl.abort();
+    await h.run;
+    expect(h.events).toEqual([plan(5)]);
+    expect(polls[0]).toBe('/poll');
+  });
+
   it('switches to polling after the stream stays silent, and delivers what the polls return, in order', async () => {
     let poll = 0;
     const h = harness((url) => {
@@ -51,8 +67,8 @@ describe('live events when the stream is held back', () => {
     h.ctl.abort();
     await h.run;
     expect(h.events).toEqual([plan(1), plan(2)]);
-    expect(h.urls[0]).toBe('/events');
-    expect(h.urls).toContain('/poll'); // the first poll asks for the starting point
+    expect(h.urls).toContain('/events');
+    expect(h.urls).toContain('/poll'); // the starting point is noted when the stream is opened
     expect(h.urls).toContain('/poll?after=10&wait=1'); // then continues from it
     expect(h.urls).toContain('/poll?after=12&wait=1'); // and from the newest id it has seen
     expect(h.statuses).toContain('open');
@@ -65,14 +81,14 @@ describe('live events when the stream is held back', () => {
     h.ctl.abort();
     await h.run;
     expect(h.events.map((e) => e.type)).toEqual(['ping', 'plan']);
-    expect(h.urls.every((u) => u === '/events')).toBe(true);
+    expect(h.urls.filter((x) => x.includes('after='))).toHaveLength(0); // only the one request that notes the starting point
   });
 
   it('stops quietly when the server refuses this client while polling', async () => {
     const h = harness((url) => (url === '/events' ? silentStream() : json({ error: { code: 'unauthorized', message: 'no' } }, 401)));
     await h.run; // returns by itself: asking again would not help
     expect(h.statuses.at(-1)).toBe('closed');
-    expect(h.urls.filter((u) => u.startsWith('/poll'))).toHaveLength(1);
+    expect(h.urls.filter((u) => u.startsWith('/poll'))).toHaveLength(2); // the starting point, then one poll that is refused; no more
   });
 
   it('keeps asking after a network error, and after an answer it does not understand', async () => {
@@ -126,6 +142,6 @@ describe('live events when the stream is held back', () => {
     await tick(10);
     h.ctl.abort();
     await h.run;
-    expect(h.urls.filter((u) => u.startsWith('/poll'))).toHaveLength(0);
+    expect(h.urls.filter((u) => u.includes('after='))).toHaveLength(0); // it never began polling
   });
 });

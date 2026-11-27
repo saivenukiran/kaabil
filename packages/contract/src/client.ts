@@ -48,7 +48,7 @@ export interface ClientOptions {
   fetch?: typeof fetch;
   /** The person's phone sets this after pairing. */
   deviceToken?: string;
-  /** How long a live stream may stay silent before the client switches to polling. Default 5000. */
+  /** How long a live stream may stay silent before the client switches to polling. Default 3000. */
   streamWatchdogMs?: number;
 }
 

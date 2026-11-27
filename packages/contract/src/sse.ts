@@ -125,13 +125,16 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
  * gets through anything. Both deliver the same events.
  */
 export async function live(o: LiveOptions): Promise<void> {
+  // Note where the news stands before anything else, so that if the stream turns out to be held back, what
+  // happened in the meantime is still there to be fetched (the server keeps the last events of each group).
+  const start = startingPoint(o);
   const streamCtl = new AbortController();
   const stop = () => streamCtl.abort();
   o.signal.addEventListener('abort', stop);
   let heard = false;
   const watchdog = setTimeout(() => {
     if (!heard) streamCtl.abort();
-  }, o.firstEventMs ?? 5000);
+  }, o.firstEventMs ?? 3000);
   await subscribe({
     ...o,
     signal: streamCtl.signal,
@@ -144,15 +147,27 @@ export async function live(o: LiveOptions): Promise<void> {
   clearTimeout(watchdog);
   o.signal.removeEventListener('abort', stop);
   if (o.signal.aborted || heard) return; // finished, or the stream worked and then was refused
-  await poll(o);
+  await poll(o, await start);
 }
 
-/** Long polling until the signal aborts, or the server says this client is not allowed. */
-export async function poll(o: LiveOptions): Promise<void> {
+/** The server's current position in the news, or undefined if it cannot be asked. Never throws. */
+async function startingPoint(o: LiveOptions): Promise<number | undefined> {
+  try {
+    const res = await o.fetch(o.pollUrl(undefined, 0), { headers: o.headers, signal: o.signal });
+    if (!res.ok) return undefined;
+    const parsed = PollResultSchema.safeParse(await res.json());
+    return parsed.success ? parsed.data.last : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Long polling until the signal aborts, or the server says this client is not allowed. `start` is where to continue from. */
+export async function poll(o: LiveOptions, start?: number): Promise<void> {
   const base = o.retryMs ?? 1000;
   const max = o.maxDelayMs ?? 10_000;
   const waitMs = o.waitMs ?? 8000;
-  let cursor: number | undefined;
+  let cursor: number | undefined = start;
   let delay = base;
   o.onStatus?.('connecting');
   while (!o.signal.aborted) {
