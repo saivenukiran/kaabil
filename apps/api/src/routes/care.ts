@@ -3,10 +3,12 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { parseMedicineLine } from '@kaabil/core';
-import { CreateGroupSchema, MedicineInputSchema, UpdateGroupSchema, type Me } from '@kaabil/contract';
+import { CallSignalSchema, CreateGroupSchema, MedicineInputSchema, UpdateGroupSchema, type Me } from '@kaabil/contract';
 import { schema } from '@kaabil/db';
 import { allowedOrigins } from '../config';
 import { HttpError, notFound, parseBody, unauthorized } from '../http';
+import { getIceServers } from '../iceServers';
+import { relaySignal } from './calls';
 import { alertDto, doseDto, groupDto, listAlerts, listDoses, medicineDto, requireMember } from '../repo';
 import { pollAnswer } from './poll';
 import { newId, newPairingCode, originAllowed, sha256 } from '../security';
@@ -210,6 +212,20 @@ export function careRoutes(d: Deps) {
     await requireMember(d.db, c.get('user').id, id);
     c.header('Cache-Control', 'no-store');
     return c.json(await pollAnswer(d, id, 'family', c.req.query(), c.req.raw.signal));
+  });
+
+  // ---- Calls: this server only passes the setup messages and says which servers to use
+  app.post('/groups/:id/call', async (c) => {
+    const id = c.req.param('id');
+    await requireMember(d.db, c.get('user').id, id);
+    await relaySignal(d, id, 'family', await parseBody(c, CallSignalSchema));
+    return c.json({ ok: true });
+  });
+
+  app.get('/groups/:id/ice', async (c) => {
+    await requireMember(d.db, c.get('user').id, c.req.param('id'));
+    c.header('Cache-Control', 'no-store');
+    return c.json(await getIceServers(d));
   });
 
   // ---- Custom voice: the family member's own recordings of Kaabil's fixed sentences
