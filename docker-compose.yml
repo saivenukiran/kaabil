@@ -1,0 +1,11 @@
+services:
+  kaabil:
+    build: .
+    image: kaabil:prototype
+    ports:
+      - "8080:8080"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
