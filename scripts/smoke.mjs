@@ -4,12 +4,15 @@
 //   npm run smoke -- http://host:port  checks a server that is already running
 //   add --no-headers                   skip the security-header checks (for a plain dev server;
 //                                      the headers come from nginx.conf inside the image)
+//   add --no-api                       skip the API checks (for a static server with no backend)
 //
 // Exit codes: 0 all checks passed, 1 a check failed, 2 could not run (no Docker, no server).
 import { spawnSync } from 'node:child_process';
+import { apiChecks, closedPorts } from './smoke-api.mjs';
 
 const args = process.argv.slice(2);
 const skipHeaders = args.includes('--no-headers');
+const skipApi = args.includes('--no-api');
 const given = args.find((a) => /^https?:\/\//.test(a));
 const DEFAULT_URL = 'http://localhost:8080';
 
@@ -68,6 +71,13 @@ async function checks(base) {
     check("header Content-Security-Policy has default-src 'self'", csp.includes("default-src 'self'"), csp || 'missing');
     check('CSP exists and has no unsafe-inline or unsafe-eval', csp !== '' && !/unsafe-(inline|eval)/.test(csp), csp || 'missing');
     check('header Permissions-Policy limits the microphone', (h.get('permissions-policy') ?? '').includes('microphone=(self)'), h.get('permissions-policy') ?? 'missing');
+  }
+
+  if (!skipApi) {
+    const apiUp = await fetch(base + '/api/health').then((r) => r.ok).catch(() => false);
+    if (apiUp) await apiChecks(base, check);
+    else check('the API answers through the proxy', false, 'no answer at /api/health (use --no-api for a static server)');
+    if (startedHere) await closedPorts(check);
   }
 }
 

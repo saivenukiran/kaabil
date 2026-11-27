@@ -2,7 +2,7 @@
 
 A voice-first companion for people who depend on family to operate their phone: elders, people with low vision or low literacy, and patients recovering from a stroke or living with diabetes. The person talks to the app, mostly in Telugu; a relative sees what happened on a family dashboard.
 
-This is the **Round 2 prototype**: one core flow that works end to end (medicine reminders and dose logging by voice). Everything else is a labelled placeholder. The full product is built at the finale.
+This is the **Round 2 prototype**: one core flow that works end to end (medicine reminders and dose logging by voice), on a real backend: a family member signs in, pairs the person's phone with a one-time code, and sees doses and alerts arrive live. Everything else is a labelled placeholder. The full product is built at the finale.
 
 ## Run it
 
@@ -12,7 +12,13 @@ You need Docker. No API keys and no `.env` file are needed.
 docker compose up --build
 ```
 
-Open <http://localhost:8080> in Chrome (it uses the browser's speech recognition; `localhost` counts as a secure page, so the microphone works).
+This starts four services: `init` writes random secrets (database password, session secret) into a volume on first start, `db` is Postgres (not reachable from outside), `api` is the backend, and `web` serves the app on one port and proxies `/api` to the backend. `docker compose down -v` removes the data and the secrets for a clean start.
+
+Open <http://localhost:8080> in Chrome (it uses the browser's speech recognition; `localhost` counts as a secure page, so the microphone works). A phone on the same network sees a plain `http://` address, which is not a secure page, so its microphone is blocked there; use a tunnel with HTTPS for a two-phone demo, and set `KAABIL_BASE_URL` and `KAABIL_TRUSTED_ORIGINS` to that address.
+
+### The test console
+
+Until the app screens are connected to the backend, <http://localhost:8080/dev> is a plain developer page that drives the whole backend flow: sign up, create the care group, add `Metformin 500, 1-0-1`, make a pairing code, act as the person's phone (pair, log a dose, raise an alert), and watch the family side update live. It is switched on by `KAABIL_DEV_CONSOLE=1` (the default in this compose file) and must be off in any real deployment.
 
 Check that it started and serves safely (needs Docker, or a running copy):
 
@@ -26,7 +32,7 @@ Without Docker (Node 24):
 ```bash
 npm ci
 npm run dev        # http://localhost:5173
-npm test           # unit tests
+npm test           # unit and API tests (the API tests run on an in-process Postgres, no Docker needed)
 npm run build      # typecheck + production build
 ```
 
@@ -47,7 +53,9 @@ The **Test panel** tab runs 12 scripted scenarios and shows expected versus actu
 |---|---|
 | Medicine reminder, spoken confirmation, dose log | Works (Telugu, English) |
 | Yes/No decided by word rules, never by the speech model | Works, unit tested |
-| Missed-dose, repeated-dose and emergency alerts on the family view | Works in one browser; push is not set up |
+| Sign-in, care group, pairing code, plan sync, doses, alerts and live events (backend) | Works and is tested; driven today by the test console at `/dev` |
+| The app screens on the backend | **Not connected yet**: the screens still keep their state in the browser; connecting them is the next step |
+| Missed-dose, repeated-dose and emergency alerts | Created by the dose dialogue and stored and streamed live by the backend; push notifications are not set up |
 | Family setup from text such as `Metformin 500, 1-0-1` | Works |
 | Pill check, daily check-in, link guard, send to family | Placeholders |
 | Cloud Indic speech, vision model | "Key not set" placeholders |
@@ -64,9 +72,9 @@ The **Test panel** tab runs 12 scripted scenarios and shows expected versus actu
 
 ## How it is built
 
-A [Turborepo](https://turborepo.dev) monorepo (npm workspaces): `apps/web` is the React app, `packages/core` is the pure logic that any future app can reuse.
+A [Turborepo](https://turborepo.dev) monorepo (npm workspaces): `apps/web` is the React app, `apps/api` is the backend, `packages/core` is the pure logic that any future app can reuse, `packages/contract` holds the request and response schemas and a typed client shared by the app and the API, and `packages/db` is the database schema and migrations.
 
-- React 19, TypeScript (strict), Vite, Vitest. No backend: state lives in the browser (`localStorage`), and two tabs stay in sync.
+- React 19, TypeScript (strict), Vite, Vitest for the app. The backend uses Hono, Better Auth (sign-in, sessions and the care-group roles; we do not write our own), Drizzle with Postgres, Zod and pino. The app screens still keep their state in the browser (`localStorage`) until they are connected to the backend.
 - `packages/core/src/dose/dialogue.ts` is a pure state machine for the dose conversation, with no clock, storage or speech in it. `packages/core/src/voice/words.ts` holds the Yes/No rules. Telugu negation is a verb ending, so the rules match endings such as `లేదు`, and any No beats any Yes.
 - All speech goes through one `SpeechPort` interface (Web Speech API in the browser, a scripted fake in tests).
 
@@ -80,7 +88,9 @@ See [CONTRIBUTORS.md](CONTRIBUTORS.md).
 
 ## Privacy and security
 
-- Transcripts are text only and stay in your browser. Audio is never stored.
-- No secrets are in this repository or in the browser bundle. Keys for cloud speech and vision will be used only by a server-side proxy at the finale; `.env.example` lists the names with empty values.
-- The container runs as a non-root user, drops all capabilities, and sends a strict Content-Security-Policy.
+- Audio is never stored. The backend keeps the family's account, the plan, dose records and alerts; it does not receive transcripts. Demo data is fictional.
+- No secrets are in this repository, in the images or in the browser bundle: the compose file generates random secrets on first start. Keys for cloud speech and vision will be used only by the backend; `.env.example` lists the names with empty values.
+- The person's phone has no account, password, OTP or PIN: the family member types a one-time 8-digit code that works once and expires in 10 minutes. Only hashes of codes and device tokens are stored.
+- The API checks that the signed-in user belongs to the group in the path (another family's id answers 404), validates every body, refuses requests from other origins, limits pairing attempts, and sends strict headers. The compose file serves plain HTTP for local use: a public copy must sit behind HTTPS.
+- Containers drop all capabilities, and the API runs as a non-root user with a read-only file system.
 - Kaabil gives no medical advice, never identifies a pill by looks, and never asks for an OTP or PIN. It is not a medical device.

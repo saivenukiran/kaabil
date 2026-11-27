@@ -1,11 +1,98 @@
+# `docker compose up --build` starts the whole app with no keys and no .env file:
+#   init  writes random secrets (database password, session secret) into a volume on first start
+#   db    Postgres 16, reachable only from this compose network
+#   api   the backend (sign-in, care groups, pairing, doses, alerts, live events)
+#   web   the static app on http://localhost:8080, which proxies /api to the api
+# Cloud speech and vision need provider keys. Without them those features say "key not set".
+# `docker compose down -v` also deletes the data and the secrets, for a clean start.
 services:
-  kaabil:
-    build: .
-    image: kaabil:prototype
-    ports:
-      - "8080:8080"
+  init:
+    image: alpine:3.21
+    volumes:
+      - secrets:/secrets
+    command:
+      - sh
+      - -c
+      - |
+        umask 022
+        [ -s /secrets/db_password ] || head -c 24 /dev/urandom | base64 | tr -d '=+/\n' > /secrets/db_password
+        [ -s /secrets/auth_secret ] || head -c 48 /dev/urandom | base64 | tr -d '\n' > /secrets/auth_secret
+        chmod 444 /secrets/db_password /secrets/auth_secret
+    restart: "no"
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: kaabil
+      POSTGRES_DB: kaabil
+      POSTGRES_PASSWORD_FILE: /secrets/db_password
+    volumes:
+      - secrets:/secrets:ro
+      - dbdata:/var/lib/postgresql/data
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kaabil -d kaabil"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      target: api
+    image: kaabil-api:prototype
+    environment:
+      DB_HOST: db
+      DB_USER: kaabil
+      DB_NAME: kaabil
+      DB_PASSWORD_FILE: /secrets/db_password
+      AUTH_SECRET_FILE: /secrets/auth_secret
+      # The public address people open. For a phone on the same network, set both to that address.
+      BASE_URL: ${KAABIL_BASE_URL:-http://localhost:8080}
+      TRUSTED_ORIGINS: ${KAABIL_TRUSTED_ORIGINS:-}
+      # The plain test console at /dev. Turn it off (0) in any real deployment.
+      KAABIL_DEV_CONSOLE: ${KAABIL_DEV_CONSOLE:-1}
+      KAABIL_TZ: ${KAABIL_TZ:-Asia/Kolkata}
+    volumes:
+      - secrets:/secrets:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    read_only: true
+    tmpfs:
+      - /tmp
     security_opt:
       - no-new-privileges:true
     cap_drop:
       - ALL
     restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      target: web
+    image: kaabil:prototype
+    ports:
+      - "8080:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+
+volumes:
+  secrets:
+  dbdata:

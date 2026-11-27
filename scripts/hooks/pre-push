@@ -73,7 +73,8 @@ for range in "${RANGES[@]}"; do
   added=$(git diff -U0 "$range" -- . ':!package-lock.json' | grep -E '^\+' | grep -vE '^\+\+\+' || true)
   bad=$(printf '%s\n' "$added" | grep -inE "$SECRET_RE" || true)
   [ -n "$bad" ] && { echo "$bad" | cut -c1-120; fail "possible secret in the diff (rotate it if it was ever real)."; }
-  bad=$(printf '%s\n' "$added" | grep -inE "$EMAIL_RE" | grep -v 'users\.noreply\.github\.com' || true)
+  # users.noreply.github.com is the safe public address; example.test is a reserved fictional domain (RFC 2606).
+  bad=$(printf '%s\n' "$added" | grep -inE "$EMAIL_RE" | grep -v 'users\.noreply\.github\.com' | grep -vE '@example\.test([^A-Za-z0-9.-]|$)' || true)
   [ -n "$bad" ] && { echo "$bad" | cut -c1-120; fail "email address in the diff. This repo is public."; }
   bad=$(printf '%s\n' "$added" | grep -inE "$PATH_RE" || true)
   [ -n "$bad" ] && { echo "$bad" | cut -c1-120; fail "local file path in the diff."; }

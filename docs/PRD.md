@@ -84,7 +84,9 @@ Main risk: speech recognition is weakest for the people we serve (slurred or slo
 |---|---|
 | Medicine reminder, spoken confirmation, dose log | Works in Telugu and English |
 | Yes/No by word rules | Works; 104 automated tests pass |
-| Missed-dose, repeated-dose and emergency alerts | Work on the family view in one browser; push notifications are not set up |
+| Missed-dose, repeated-dose and emergency alerts | Created by the dose dialogue; the backend stores them and streams them live to the family; push notifications are not set up |
+| Backend: family sign-in, care group, one-time pairing code for the person's phone, plan sync, idempotent dose log, alerts, live events, and a server check for missed doses | Built and tested (API tests on an in-process Postgres, a smoke test through the proxy); driven today by a plain test console |
+| The app screens on the backend | Not connected yet: the screens still keep their state in the browser |
 | Family setup from text | Works |
 | Pill check, daily check-in, link guard, send to family | Placeholders |
 | Cloud Indic speech and the vision model | "Key not set" placeholders; the prototype needs no keys |
@@ -95,11 +97,12 @@ Main risk: speech recognition is weakest for the people we serve (slurred or slo
 - `docker compose up --build` has not been run on the machine that built this repo (it has no Docker). The compose file and the image build are written to be standard.
 - Real microphone and Telugu speech recognition on a phone.
 - A Telugu text-to-speech voice on a phone. On the Windows PC that built this repo, the Voice check tab found 22 browser voices and none for Telugu, so there Kaabil shows each Telugu sentence large on screen instead of speaking it (English is spoken). A phone's Telugu voice depends on its installed speech engine and is not measured.
+- Two real phones on the live backend. The backend flow has run only in tests and in the test console, on one machine.
 - The Telugu wording has not been reviewed by a native speaker.
 
 ## 8. Out of scope for this prototype
 
-Payments, a backend and accounts, push notifications, native apps, background wake word, real camera pill reading, real link interception, clinical claims.
+Payments, push notifications, native apps, background wake word, real camera pill reading, real link interception, clinical claims. The prototype does have a backend and family accounts; the person never has an account, an OTP or a PIN.
 
 ## 9. Dependencies and fallbacks
 
@@ -109,13 +112,13 @@ Payments, a backend and accounts, push notifications, native apps, background wa
 | Browser text-to-speech with a Telugu voice | Speaking | The same sentence is shown large on screen |
 | Cloud Indic speech (finale, server-side key) | Better recognition after two failures | Browser recognition, then buttons |
 | Vision model (finale) | Pill check | Ask the family |
-| Network | Family alerts across devices (finale) | In-app alert on the same device; dose logs sync later |
+| Network and the backend | Family alerts and dose records across devices | A failed send is not retried yet (finale), so the screen must never claim a delivery that did not happen |
 
 ## 10. Launch plan
 
 | Stage | What |
 |---|---|
-| 1. Round 2 prototype | This repo: one core flow, labelled placeholders, runs from `docker compose up` with no keys |
+| 1. Round 2 prototype | This repo: one core flow on a real backend (sign-in, pairing, live alerts), labelled placeholders, runs from `docker compose up` with no keys |
 | 2. Finale build | Server-side proxy for cloud speech and vision keys, push alerts for the family, pill check and link guard on a demo inbox |
 | 3. Pilot | 30 elders with a senior-citizen association, measured against the targets in section 6 |
 | 4. Native apps | Link guard across apps and background wake word |
