@@ -1,0 +1,22 @@
+{
+  "name": "@kaabil/contract",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Kaabil API contract: request and response schemas, types and a small typed client shared by the server and the web app.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@kaabil/core": "*",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.2"
+  }
+}
