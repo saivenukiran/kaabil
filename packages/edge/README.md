@@ -46,6 +46,14 @@ KAABIL_BASE_URL=https://kaabil.<account>.workers.dev docker compose up -d
 
 `KAABIL_BASE_URL` makes the sign-in cookie `Secure` and lets the origin check accept the Worker's address.
 
+## Live updates through a quick tunnel
+
+A Cloudflare quick tunnel accepts a live stream (server-sent events) and then holds every event back. So the client in `@kaabil/contract` opens the stream, and if nothing arrives in 3 seconds it switches to **long polling** (`/api/.../poll`), an ordinary request that waits up to 10 seconds for news. Updates still arrive at once. Events are kept for polling per group (the last 100), and the starting position is noted when the subscription begins, so an event published during those first seconds is not lost. `scripts/smoke.mjs ... --no-stream` skips the raw stream check behind a tunnel and still checks polling.
+
+## Security headers
+
+`_headers` gives the screens served from the Worker the same headers nginx gives them in the Docker image (policy limited to our own origin, no framing, microphone and camera only for our own origin). Answers from `/api` carry the API's own headers.
+
 ## Limits (honest)
 
 - The backend runs on one machine. If that machine sleeps or the tunnel stops, the app shows "The backend is not reachable" and nothing else works. This is for testing and the demo, not a hosting plan.

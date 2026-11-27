@@ -16,6 +16,10 @@ This starts four services: `init` writes random secrets (database password, sess
 
 Open <http://localhost:8080> in Chrome (it uses the browser's speech recognition; `localhost` counts as a secure page, so the microphone works). A phone on the same network sees a plain `http://` address, which is not a secure page, so its microphone is blocked there; use a tunnel with HTTPS for a two-phone demo, and set `KAABIL_BASE_URL` and `KAABIL_TRUSTED_ORIGINS` to that address.
 
+### On a phone, over HTTPS
+
+A phone only lets a page use the microphone on an HTTPS address, so for testing the screens are served by a small Cloudflare Worker on the free plan (`packages/edge`, see its README) that forwards `/api` through a Cloudflare quick tunnel to the machine running `docker compose`. Start the stack with `KAABIL_BASE_URL` set to the Worker's address, start the tunnel, tell the Worker where it is, and open the Worker's address on the phone (`/test/` is the two-phone test page). The backend runs on one machine: if it sleeps or the tunnel stops, the page says the backend is not reachable. Use fictional data only.
+
 ### The test page
 
 <http://localhost:8080/test/> is a plain page with the **family phone** and the **person's phone** side by side, both on the real backend. Sign up, create the care group, add `Metformin 500, 1-0-1` (or a medicine due in 2 minutes), make a pairing code (it is filled in on the person's phone), press **Remind now**, and answer with the buttons, the microphone or the text box. The family side shows the dose or alert as it happens. The family phone can also **record its own voice** reading Kaabil's sentences; the person's phone then plays that recording instead of the synthetic voice. `npm run seed` makes a fictional demo family (Amma, Telugu, two medicines) and prints a fresh pairing code, so a demo starts in seconds. Run the three end-to-end scripts with TestSutra: `npm run e2e` (set `KAABIL_TESTSUTRA` to the path of `testsutra-windows-x64.exe`).
