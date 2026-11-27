@@ -28,7 +28,7 @@ Without Docker (Node 24):
 npm ci
 npm run dev          # http://localhost:5173
 npm run typecheck    # both packages
-npm test             # 80 tests in packages/core
+npm test             # 104 tests in packages/core
 npm run build        # typecheck + production build into apps/web/dist
 npm run check        # everything the pre-push guard runs
 ```
@@ -136,7 +136,7 @@ The family adds medicines with a line such as `Metformin 500, 1-0-1` (morning, n
 
 ## 7. Test coverage
 
-`npm test` runs 80 tests (Vitest) in `packages/core`:
+`npm test` runs 104 tests (Vitest) in `packages/core`:
 
 | Group | What it covers |
 |---|---|
@@ -144,6 +144,8 @@ The family adds medicines with a line such as `Metformin 500, 1-0-1` (morning, n
 | Language registry | Every registered language is complete (12 messages, word lists, state and button words, a valid locale, 112 in the emergency message, no word both Yes and No); a made-up language added in the test works with no code change |
 | Engine and dialogue | The transitions in section 5 and the time limits |
 | Medicine parser | Valid and invalid lines, `BD`/`OD`/`TDS` |
+| Safety properties | Run on thousands of generated sentences and 300 random conversations (seeded, so a failure repeats): a dose is recorded only after a claim and an explicit Yes, once per slot; a sentence with a No is never read as Yes or as a claim; alerts and the "family told" sentence need consent. Checked by changing the code on purpose: each break makes the matching test fail |
+| Voice report | Picking a phone's voice for a language (exact locale first, underscore tags such as `te_IN`, no prefix mistakes) and the plain-text report |
 | 12 scenarios | `log-telugu`, `confirm-no`, `negated-verb`, `not-yet`, `snooze-returns`, `no-answer-alert`, `claimed-again`, `mixed-yes-no`, `bare-yes`, `emergency`, `english`, `silence-buttons` |
 
 The same 12 scenarios run in the app's **Test panel** tab, which shows expected versus actual for each. They run against the real engine, with no mocks of the logic.

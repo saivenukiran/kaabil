@@ -83,7 +83,7 @@ Main risk: speech recognition is weakest for the people we serve (slurred or slo
 | Area | Status |
 |---|---|
 | Medicine reminder, spoken confirmation, dose log | Works in Telugu and English |
-| Yes/No by word rules | Works; 80 automated tests pass |
+| Yes/No by word rules | Works; 104 automated tests pass |
 | Missed-dose, repeated-dose and emergency alerts | Work on the family view in one browser; push notifications are not set up |
 | Family setup from text | Works |
 | Pill check, daily check-in, link guard, send to family | Placeholders |
