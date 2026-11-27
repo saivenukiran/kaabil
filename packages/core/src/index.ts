@@ -8,6 +8,8 @@ export * from './i18n/messages';
 export * from './i18n/packs';
 export * from './voice/words';
 export * from './voice/voiceReport';
+export * from './call/callMachine';
+export * from './call/signal';
 export * from './dose/dialogue';
 export * from './dose/engine';
 export * from './dose/medicineParser';
