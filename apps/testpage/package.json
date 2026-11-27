@@ -1,0 +1,21 @@
+{
+  "name": "@kaabil/testpage",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A plain static page with a family phone and the person's phone side by side, wired to the real backend. For testing the whole prototype until the real screens are connected.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@kaabil/contract": "*",
+    "@kaabil/core": "*",
+    "@kaabil/voice": "*"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^8.4.0"
+  }
+}
