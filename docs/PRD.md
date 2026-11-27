@@ -85,7 +85,7 @@ Main risk: speech recognition is weakest for the people we serve (slurred or slo
 | Area | Status |
 |---|---|
 | Medicine reminder, spoken confirmation, dose log | Works in Telugu and English |
-| Yes/No by word rules | Works; 104 automated tests pass |
+| Yes/No by word rules | Works; 132 automated tests pass |
 | Missed-dose, repeated-dose and emergency alerts | Created by the dose dialogue; the backend stores them and streams them live to the family; push notifications are not set up |
 | Backend: family sign-in, care group, one-time pairing code for the person's phone, plan sync, idempotent dose log, alerts, live events, and a server check for missed doses | Built and tested (API tests on an in-process Postgres, a smoke test through the proxy); driven today by a plain test console |
 | The app screens on the backend | Not connected yet: the screens still keep their state in the browser |
