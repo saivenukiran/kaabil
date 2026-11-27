@@ -4,6 +4,8 @@
 //   npm run smoke -- http://host:port  checks a server that is already running
 //   add --no-headers                   skip the security-header checks (for a plain dev server;
 //                                      the headers come from nginx.conf inside the image)
+//   add --no-stream                    skip the raw live-stream check (a Cloudflare quick tunnel holds streams back;
+//                                      polling is still checked)
 //   add --no-api                       skip the API checks (for a static server with no backend)
 //
 // Exit codes: 0 all checks passed, 1 a check failed, 2 could not run (no Docker, no server).
@@ -75,7 +77,7 @@ async function checks(base) {
 
   if (!skipApi) {
     const apiUp = await fetch(base + '/api/health').then((r) => r.ok).catch(() => false);
-    if (apiUp) await apiChecks(base, check);
+    if (apiUp) await apiChecks(base, check, { stream: !args.includes('--no-stream') });
     else check('the API answers through the proxy', false, 'no answer at /api/health (use --no-api for a static server)');
     if (startedHere) await closedPorts(check);
   }
