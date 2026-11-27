@@ -51,8 +51,8 @@ The **Test panel** tab runs 12 scripted scenarios and shows expected versus actu
 
 | Document | For |
 |---|---|
-| [PRD.md](PRD.md) | Problem, users, requirements, how we will know it works, what is not verified |
-| [SPECS.md](SPECS.md) | Architecture, the dose state machine, word rules, timings, tests, security |
+| [docs/PRD.md](docs/PRD.md) | Problem, users, requirements, how we will know it works, what is not verified |
+| [docs/SPECS.md](docs/SPECS.md) | Architecture, the dose state machine, word rules, timings, tests, security |
 
 ## How it is built
 
