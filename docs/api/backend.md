@@ -44,6 +44,7 @@ db (Postgres 16, not published)
 | `routes/care.ts` | The family's routes (behind a session): groups, medicines, pairing codes, devices, doses, alerts, stream, poll, custom voice |
 | `routes/device.ts` | The phone's routes: pairing, plan, doses, alerts, stream, poll, recordings |
 | `routes/poll.ts` | Long polling shared by both |
+| `routes/calls.ts`, `iceServers.ts` | Call setup messages passed to the other side with limits; the servers a call uses to connect (public STUN, optional relay) |
 | `routes/voice.ts` | `GET /api/voice/status` (cloud voice: not wired) |
 | `routes/dev.ts`, `routes/consoleHtml.ts` | The developer console and "remind now" (only when `KAABIL_DEV_CONSOLE=1`) |
 | `repo.ts` | Database reads and the conversion of rows to contract objects. Every query is scoped by group |
@@ -72,6 +73,7 @@ Set by environment variables. In `docker compose` the secrets are generated and 
 | `MISSED_AFTER_MS` | 1,320,000 (22 minutes) | How long after a slot with no dose the server raises a missed-dose alert |
 | `SWEEP_EVERY_MS` | 60,000 | How often the server checks |
 | `LOG_LEVEL` | `info` | pino level |
+| `CF_TURN_KEY_ID` and `CF_TURN_API_TOKEN` (or `CF_TURN_API_TOKEN_FILE`) | none | Optional Cloudflare Realtime TURN key: calls then connect through a relay when a direct path is blocked. Both must be set; the token is a secret and is never logged or sent to a phone. See [calls.md](calls.md) |
 
 `.env.example` lists the optional settings. No secret is in the repository or the images. `docker compose down -v` deletes the data and the secrets for a clean start.
 
@@ -128,4 +130,5 @@ npm run seed                               # a fictional demo family and a pairi
 | No push notifications | The family sees alerts live only while the app is open |
 | No backups, no server-side deletion of a whole care group | Before any real person's data |
 | Voice cloud proxies are not built | See [voice.md](voice.md) |
+| Calls: only STUN unless a relay key is set, and the page must be open to ring | See [calls.md](calls.md) |
 | Better Auth exposes more endpoints under `/api/auth/` than the apps use (organization management, such as inviting or removing members) | They are protected by the library's own permission checks, which we have not tested separately. Treat the care-group routes as the supported way to manage a group |
