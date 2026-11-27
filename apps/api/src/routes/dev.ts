@@ -23,6 +23,9 @@ export function devRoutes(d: Deps) {
 
   app.get('/dev', (c) => {
     c.header('Cache-Control', 'no-store');
+    c.header('X-Content-Type-Options', 'nosniff');
+    c.header('Referrer-Policy', 'no-referrer');
+    c.header('X-Frame-Options', 'DENY');
     // The console is plain HTML with one inline script, so it needs its own, stricter-than-nothing policy.
     c.header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'");
     return c.html(consoleHtml);

@@ -23,13 +23,16 @@ export function createApp(d: Deps) {
     d.log.info({ method: c.req.method, path: c.req.path, status: c.res.status, ms: Date.now() - t }, 'request');
   });
 
+  // The JSON API gets the strictest policy. The test console at /dev sets its own headers.
   app.use(
-    '*',
+    '/api/*',
     secureHeaders({
       contentSecurityPolicy: { defaultSrc: ["'none'"], frameAncestors: ["'none'"] },
       referrerPolicy: 'no-referrer',
       xFrameOptions: 'DENY',
       crossOriginResourcePolicy: 'same-origin',
+      // HSTS only makes sense once the app is served over HTTPS; over plain HTTP it is ignored noise.
+      strictTransportSecurity: d.config.baseUrl.startsWith('https://') ? 'max-age=31536000; includeSubDomains' : false,
     }),
   );
   // JSON bodies are small. Audio for speech recognition has its own, larger limit on its own route.
