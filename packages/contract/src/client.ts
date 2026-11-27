@@ -29,7 +29,7 @@ import {
   type ServerEvent,
   type UpdateGroup,
 } from './schemas';
-import { subscribe, type StreamStatus } from './sse';
+import { live, type StreamStatus } from './sse';
 
 export class ApiError extends Error {
   constructor(
@@ -48,6 +48,8 @@ export interface ClientOptions {
   fetch?: typeof fetch;
   /** The person's phone sets this after pairing. */
   deviceToken?: string;
+  /** How long a live stream may stay silent before the client switches to polling. Default 5000. */
+  streamWatchdogMs?: number;
 }
 
 export interface EventHandlers {
@@ -93,9 +95,19 @@ export function createClient(options: ClientOptions = {}) {
   const Ok = z.object({ ok: z.literal(true) }).strict();
   const g = (id: string) => `/api/care/groups/${encodeURIComponent(id)}`;
 
-  function stream(url: string, headers: Record<string, string>, h: EventHandlers): () => void {
+  /** Live events: a stream when one gets through, long polling when something holds the stream back. */
+  function stream(url: string, headers: Record<string, string>, h: EventHandlers, pollPath: string): () => void {
     const ctl = new AbortController();
-    void subscribe({ url: `${base}${url}`, fetch: doFetch, headers, signal: ctl.signal, onEvent: h.onEvent, onStatus: h.onStatus });
+    void live({
+      url: `${base}${url}`,
+      fetch: doFetch,
+      headers,
+      signal: ctl.signal,
+      onEvent: h.onEvent,
+      onStatus: h.onStatus,
+      firstEventMs: options.streamWatchdogMs,
+      pollUrl: (after, waitMs) => `${base}${pollPath}${after === undefined ? '' : `?after=${after}&wait=${waitMs}`}`,
+    });
     return () => ctl.abort();
   }
 
@@ -123,7 +135,7 @@ export function createClient(options: ClientOptions = {}) {
       alerts: (id: string) => family('GET', `${g(id)}/alerts`, AlertListSchema) as Promise<z.infer<typeof AlertListSchema>>,
       acknowledge: (id: string, alertId: string) => family('POST', `${g(id)}/alerts/${encodeURIComponent(alertId)}/ack`, AlertSchema) as Promise<z.infer<typeof AlertSchema>>,
       /** Returns a function that closes the stream. Reconnects by itself. */
-      events: (id: string, h: EventHandlers) => stream(`${g(id)}/events`, {}, h),
+      events: (id: string, h: EventHandlers) => stream(`${g(id)}/events`, {}, h, `${g(id)}/poll`),
 
       /** Custom voice. The sentences Kaabil will say for this person, and which already have a recording. */
       voice: (id: string) => family('GET', `${g(id)}/voice`, VoiceOverviewSchema) as Promise<z.infer<typeof VoiceOverviewSchema>>,
@@ -148,7 +160,7 @@ export function createClient(options: ClientOptions = {}) {
       plan: () => device('GET', '/api/device/plan', PlanSchema) as Promise<z.infer<typeof PlanSchema>>,
       postDose: (v: DoseInput) => device('POST', '/api/device/doses', DoseSchema, v) as Promise<z.infer<typeof DoseSchema>>,
       postAlert: (v: AlertInput) => device('POST', '/api/device/alerts', AlertResultSchema, v) as Promise<z.infer<typeof AlertResultSchema>>,
-      events: (h: EventHandlers) => stream('/api/device/events', deviceHeaders(), h),
+      events: (h: EventHandlers) => stream('/api/device/events', deviceHeaders(), h, '/api/device/poll'),
       /** The recordings the family made, to match against what this phone is about to say. */
       voiceClips: () => device('GET', '/api/device/voice', DeviceClipListSchema) as Promise<z.infer<typeof DeviceClipListSchema>>,
       clipAudio: async (textHash: string) => (await binary('GET', `/api/device/voice/${encodeURIComponent(textHash)}/audio`, deviceHeaders())).blob(),
