@@ -1,9 +1,14 @@
 /**
- * Word rules decide Yes and No. A speech model only supplies text; the lists below
- * decide what it means. Uncertainty never counts as Yes: anything we cannot classify
- * with confidence returns "unclear" or "mixed", and the app asks again.
+ * Word rules decide Yes and No. A speech model only supplies text; the word lists decide
+ * what it means. Uncertainty never counts as Yes: anything we cannot classify with
+ * confidence returns "unclear" or "mixed", and the app asks again.
+ *
+ * The lists live in the language files (`i18n/languages/*.ts`), not here. The rules combine
+ * the lists of every registered language, so a new language is understood as soon as it is
+ * registered, and people who mix two languages in one sentence are understood too.
  */
-import type { LangCode } from '../types';
+import type { LanguageDef, WordLists } from '../i18n/language';
+import { LANGUAGES } from '../i18n/languages';
 
 export type Intent =
   | 'emergency'
@@ -17,47 +22,50 @@ export type Intent =
   | 'mixed' // contains both Yes and No
   | 'unclear';
 
-const nfc = (xs: string[]) => xs.map((x) => x.normalize('NFC').toLowerCase());
-
-const YES = nfc(['అవును', 'ఔను', 'అవునండి', 'సరే', 'సరేనండి', 'అలాగే', 'haan', 'han', 'haanji', 'हाँ', 'हां', 'हाँजी', 'yes', 'yeah', 'yep', 'ok', 'okay']);
-const NO = nfc(['కాదు', 'కాదండి', 'వద్దు', 'వద్దండి', 'నో', 'no', 'nope', 'not', 'never', 'nahi', 'nahin', 'नहीं', 'नही', 'मत', 'mat', 'dont']);
-// Telugu attaches negation to the verb (వేసుకోలేదు = "did not take"), so match word endings.
-const NO_SUFFIX = nfc(['లేదు', 'లేను', 'లేవు', 'లేరు', 'లేదండి']);
-const CLAIM = nfc(['వేసుకున్నాను', 'వేసుకున్నా', 'వేసుకొన్నాను', 'వేసుకొన్నా', 'తీసుకున్నాను', 'తీసుకున్నా', 'తీసుకొన్నాను', 'li', 'ली', 'taken', 'took', 'swallowed']);
-const LATER = nfc(['ఇంకా', 'తర్వాత', 'later', 'abhi', 'अभी', 'baad', 'बाद', 'yet']);
-const STOP = nfc(['ఆపు', 'ఆపండి', 'रुको', 'रुकिए', 'stop']);
-const HELP = nfc(['help', 'సహాయం', 'మదద్', 'मदद']);
-const REPEAT = nfc(['మళ్ళీ చెప్పు', 'మళ్లీ చెప్పు', 'మళ్ళీ చెప్పండి', 'మళ్లీ చెప్పండి', 'repeat', 'say again', 'phir se', 'फिर से', 'दोबारा']);
-// Substring match on purpose: Telugu words carry suffixes (పడిపోయాను, పడిపోయారు).
-const EMERGENCY = nfc(['ఛాతీ నొప్పి', 'ఛాతీలో నొప్పి', 'ఛాతి నొప్పి', 'పడిపోయ', 'chest pain', 'i fell', 'fell down', 'breathe', 'सीने में दर्द', 'गिर गया', 'गिर गई', 'gir gaya', 'seene mein dard']);
-
 export function normalize(text: string): string {
   return text
     .normalize('NFC')
     .toLowerCase()
-    .replace(/[‌‍]/g, '') // joiners inside Telugu words must not split them
+    .replace(/[‌‍]/g, '') // joiners inside Indic words must not split them
     .replace(/[^\p{L}\p{M}\p{N}\s]/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
 
+const nfc = (xs: string[]) => xs.map((x) => x.normalize('NFC').toLowerCase());
+
+/** The word lists of all languages merged, built once per language list. */
+const compiled = new WeakMap<readonly LanguageDef[], WordLists>();
+
+function wordsOf(languages: readonly LanguageDef[]): WordLists {
+  const cached = compiled.get(languages);
+  if (cached) return cached;
+  const all: WordLists = { yes: [], no: [], noSuffix: [], claim: [], later: [], stop: [], help: [], repeat: [], emergency: [] };
+  for (const l of languages) {
+    for (const k of Object.keys(all) as (keyof WordLists)[]) all[k].push(...nfc(l.words[k]));
+  }
+  compiled.set(languages, all);
+  return all;
+}
+
 const hasWord = (words: string[], list: string[]) => words.some((w) => list.includes(w));
 const hasPhrase = (n: string, list: string[]) => list.some((p) => ` ${n} `.includes(` ${normalize(p)} `));
 
-export function interpret(text: string): Intent {
+export function interpret(text: string, languages: readonly LanguageDef[] = LANGUAGES): Intent {
+  const w = wordsOf(languages);
   const n = normalize(text);
   if (n === '') return 'unclear';
   const words = n.split(' ');
 
-  if (EMERGENCY.some((p) => n.includes(normalize(p)))) return 'emergency';
-  if (hasWord(words, STOP)) return 'stop';
-  if (hasWord(words, HELP)) return 'help';
-  if (hasPhrase(n, REPEAT)) return 'repeat';
+  if (w.emergency.some((p) => n.includes(normalize(p)))) return 'emergency';
+  if (hasWord(words, w.stop)) return 'stop';
+  if (hasWord(words, w.help)) return 'help';
+  if (hasPhrase(n, w.repeat)) return 'repeat';
 
-  const negated = hasWord(words, NO) || words.some((w) => NO_SUFFIX.some((s) => w.endsWith(s)));
-  const yes = hasWord(words, YES);
-  const claim = hasWord(words, CLAIM);
-  const later = hasWord(words, LATER);
+  const negated = hasWord(words, w.no) || words.some((x) => w.noSuffix.some((s) => x.endsWith(s)));
+  const yes = hasWord(words, w.yes);
+  const claim = hasWord(words, w.claim);
+  const later = hasWord(words, w.later);
 
   if (negated && yes) return 'mixed';
   if (negated) return later ? 'notyet' : 'no';
@@ -67,15 +75,27 @@ export function interpret(text: string): Intent {
   return 'unclear';
 }
 
-/** Telugu and Devanagari letters switch the reply language; Latin-only text keeps it. */
-export function detectLang(text: string, current: LangCode): LangCode {
-  let te = 0;
-  let hi = 0;
+/**
+ * Letters of a language's script switch the reply language to it. Latin-only text keeps the
+ * current language, because Latin script cannot tell English from a Latin-script language.
+ * Mixed text goes to the language with the most letters; a tie keeps the current one.
+ */
+export function detectLang(text: string, current: string, languages: readonly LanguageDef[] = LANGUAGES): string {
+  const counts = new Map<string, number>();
   for (const ch of text) {
     const c = ch.codePointAt(0) ?? 0;
-    if (c >= 0x0c00 && c <= 0x0c7f) te++;
-    else if (c >= 0x0900 && c <= 0x097f) hi++;
+    for (const l of languages) {
+      if (l.scripts.some(([lo, hi]) => c >= lo && c <= hi)) counts.set(l.code, (counts.get(l.code) ?? 0) + 1);
+    }
   }
-  if (te === 0 && hi === 0) return current;
-  return te >= hi ? 'te' : 'hi';
+  let best = current;
+  let bestCount = counts.get(current) ?? 0;
+  for (const [code, n] of counts) {
+    if (n > bestCount) {
+      best = code;
+      bestCount = n;
+    }
+  }
+  return best;
 }
+

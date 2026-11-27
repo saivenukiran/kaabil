@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { SCENARIOS, runScenario, sameOutcome } from './scenarios';
 import { advance, hear, initialState, press, saveMedicine } from './engine';
 import { parseMedicineLine } from './medicineParser';
+import type { AppState } from '../types';
 
 describe('scripted dose scenarios', () => {
   for (const sc of SCENARIOS) {
@@ -21,9 +22,12 @@ describe('engine details', () => {
   });
 
   it('replies in the language the person just spoke', () => {
-    const s = hear(at8(), 'दवाई ले ली');
-    expect(s.lang).toBe('hi');
-    expect(s.outbox.at(-1)?.text).toBe('दर्ज करूँ?');
+    let s: AppState = { ...at8(), lang: 'en' };
+    s = hear(s, 'వేసుకున్నాను');
+    expect(s.lang).toBe('te');
+    expect(s.outbox.at(-1)?.text).toBe('నమోదు చేయనా?');
+    s = hear(s, 'yes');
+    expect(s.lang).toBe('te'); // Latin-only text keeps the current language
   });
 
   it('buttons: Yes means "I took it", then Yes confirms', () => {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { forceButtons, hear, render, silence } from '@kaabil/core';
+import { forceButtons, hear, render, silence, ui } from '@kaabil/core';
 import { getState, update, useAppState } from '../store';
 import { createPort } from '../voice/speechPort';
 
@@ -62,8 +62,8 @@ export function useVoiceLoop() {
           autoListen.current = false;
           setMicMessage(
             r.reason === 'denied'
-              ? 'Microphone is blocked. Use the buttons or type.'
-              : 'This browser cannot listen. Use the buttons or type.',
+              ? ui(s.lang, 'micBlocked')
+              : ui(s.lang, 'micUnsupported'),
           );
           update(forceButtons);
           break;

@@ -55,8 +55,10 @@ for range in "${RANGES[@]}"; do
   step "Commits in $range"
   git log --format='%h %an <%ae> | %s' "$range"
 
-  step "1. Author and committer use the GitHub noreply email"
-  bad=$(git log --format='%h %ae %ce' "$range" | grep -viE '^[0-9a-f]+ [^ ]+@users\.noreply\.github\.com [^ ]+@users\.noreply\.github\.com$' || true)
+  step "1. Author uses the GitHub noreply email (committer too, or GitHub's own merge address)"
+  # A squash merge made on github.com has GitHub's own no-reply address as committer.
+  # The author must still be a personal noreply address.
+  bad=$(git log --format='%h %ae %ce' "$range" | grep -viE '^[0-9a-f]+ [^ ]+@users\.noreply\.github\.com ([^ ]+@users\.noreply\.github\.com|noreply@github\.com)$' || true)
   [ -n "$bad" ] && { echo "$bad"; fail "a commit uses a real email. Set git config user.email to your <id>+<username>@users.noreply.github.com address and re-create the commit."; }
 
   step "2. No attribution trailers"

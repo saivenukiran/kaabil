@@ -4,7 +4,7 @@
  * event. Nothing leaves the device and no audio is ever stored.
  */
 import { useSyncExternalStore } from 'react';
-import { type AppState, initialState } from '@kaabil/core';
+import { type AppState, DEFAULT_LANG, initialState, isLangCode } from '@kaabil/core';
 
 const KEY = 'kaabil.prototype.state.v1';
 
@@ -18,7 +18,7 @@ function load(): AppState {
     const raw = window.localStorage.getItem(KEY);
     if (raw) {
       const parsed: unknown = JSON.parse(raw);
-      if (isState(parsed)) return parsed;
+      if (isState(parsed)) return isLangCode(parsed.lang) ? parsed : { ...parsed, lang: DEFAULT_LANG };
     }
   } catch {
     // Storage blocked or corrupted: start from the demo seed.

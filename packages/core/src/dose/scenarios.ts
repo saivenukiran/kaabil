@@ -88,12 +88,6 @@ export const SCENARIOS: Scenario[] = [
     expect: { ...base, alerts: ['emergency'], show112: true, lastSay: 'emergency' },
   },
   {
-    id: 'hindi',
-    title: 'Hindi claim and Yes: logged, reply in Hindi',
-    actions: [{ do: 'hear', text: 'दवाई ले ली' }, { do: 'hear', text: 'हाँ' }],
-    expect: { ...base, phase: 'logged', doses: 1, lastSay: 'logged' },
-  },
-  {
     id: 'english',
     title: 'English claim and Yes: logged',
     actions: [{ do: 'hear', text: 'I took it' }, { do: 'hear', text: 'yes' }],

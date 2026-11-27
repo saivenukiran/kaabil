@@ -32,19 +32,20 @@ npm run build      # typecheck + production build
 5. Try the edge cases: say **"ఇంకా లేదు"** (snoozed 10 minutes), say nothing and press **Advance 10 min** twice (the family gets a missed-dose alert), claim the dose again (refused and flagged), say **"ఛాతీ నొప్పి"** (a 112 button appears and the family is alerted).
 6. No microphone or no Telugu voice on your device? The same flow works with the Yes/No buttons and the text box.
 
-The **Test panel** tab runs 13 scripted scenarios and shows expected versus actual. The **Roadmap** tab lists what works and what is a placeholder.
+The **Test panel** tab runs 12 scripted scenarios and shows expected versus actual. The **Roadmap** tab lists what works and what is a placeholder.
 
 ## What works, and what does not (yet)
 
 | Area | Status |
 |---|---|
-| Medicine reminder, spoken confirmation, dose log | Works (Telugu, Hindi, English) |
+| Medicine reminder, spoken confirmation, dose log | Works (Telugu, English) |
 | Yes/No decided by word rules, never by the speech model | Works, unit tested |
 | Missed-dose, repeated-dose and emergency alerts on the family view | Works in one browser; push is not set up |
 | Family setup from text such as `Metformin 500, 1-0-1` | Works |
 | Pill check, daily check-in, link guard, send to family | Placeholders |
 | Cloud Indic speech, vision model | "Key not set" placeholders |
-| Eight more language packs | Data only, not reviewed by native speakers |
+| Nine more language packs | Data only, not reviewed by native speakers |
+| Adding a language | One file: see `packages/core/src/i18n/languages/README.md` |
 
 ## Read more
 

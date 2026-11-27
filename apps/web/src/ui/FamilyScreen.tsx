@@ -43,7 +43,7 @@ function Setup() {
       <h3>Setup (family)</h3>
       <div className="row">
         <label>Name <input value={state.person.name} onChange={(e) => update((s) => setPerson(s, { name: e.target.value }))} /></label>
-        <label>Address <input value={state.person.address} lang="te" onChange={(e) => update((s) => setPerson(s, { address: e.target.value }))} /></label>
+        <label>Address <input value={state.person.address} lang={state.lang} onChange={(e) => update((s) => setPerson(s, { address: e.target.value }))} /></label>
       </div>
       <label htmlFor="med">Medicine, typed or dictated (for example “Metformin 500, 1-0-1”)</label>
       <div className="row">
