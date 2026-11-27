@@ -16,6 +16,10 @@ This starts four services: `init` writes random secrets (database password, sess
 
 Open <http://localhost:8080> in Chrome (it uses the browser's speech recognition; `localhost` counts as a secure page, so the microphone works). A phone on the same network sees a plain `http://` address, which is not a secure page, so its microphone is blocked there; use a tunnel with HTTPS for a two-phone demo, and set `KAABIL_BASE_URL` and `KAABIL_TRUSTED_ORIGINS` to that address.
 
+### The test page
+
+<http://localhost:8080/test/> is a plain page with the **family phone** and the **person's phone** side by side, both on the real backend. Sign up, create the care group, add `Metformin 500, 1-0-1` (or a medicine due in 2 minutes), make a pairing code (it is filled in on the person's phone), press **Remind now**, and answer with the buttons, the microphone or the text box. The family side shows the dose or alert as it happens. The family phone can also **record its own voice** reading Kaabil's sentences; the person's phone then plays that recording instead of the synthetic voice. Run the three end-to-end scripts with TestSutra: `npm run e2e` (set `KAABIL_TESTSUTRA` to the path of `testsutra-windows-x64.exe`).
+
 ### The test console
 
 Until the app screens are connected to the backend, <http://localhost:8080/dev> is a plain developer page that drives the whole backend flow: sign up, create the care group, add `Metformin 500, 1-0-1`, make a pairing code, act as the person's phone (pair, log a dose, raise an alert), and watch the family side update live. It is switched on by `KAABIL_DEV_CONSOLE=1` (the default in this compose file) and must be off in any real deployment.
@@ -88,7 +92,7 @@ See [CONTRIBUTORS.md](CONTRIBUTORS.md).
 
 ## Privacy and security
 
-- Audio is never stored. The backend keeps the family's account, the plan, dose records and alerts; it does not receive transcripts. Demo data is fictional.
+- The person's voice is never recorded or stored. A family member can record their own voice reading Kaabil's fixed sentences, with their consent; those recordings are stored on the server so the person's phone can play them, and can be deleted at any time. The backend keeps the family's account, the plan, dose records and alerts; it does not receive transcripts. Demo data is fictional.
 - No secrets are in this repository, in the images or in the browser bundle: the compose file generates random secrets on first start. Keys for cloud speech and vision will be used only by the backend; `.env.example` lists the names with empty values.
 - The person's phone has no account, password, OTP or PIN: the family member types a one-time 8-digit code that works once and expires in 10 minutes. Only hashes of codes and device tokens are stored.
 - The API checks that the signed-in user belongs to the group in the path (another family's id answers 404), validates every body, refuses requests from other origins, limits pairing attempts, and sends strict headers. The compose file serves plain HTTP for local use: a public copy must sit behind HTTPS.
