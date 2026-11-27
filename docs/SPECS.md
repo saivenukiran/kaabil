@@ -31,6 +31,7 @@ npm run typecheck    # both packages
 npm test             # 104 tests in packages/core
 npm run build        # typecheck + production build into apps/web/dist
 npm run check        # everything the pre-push guard runs
+npm run smoke        # start the Docker image and check what it serves (needs Docker)
 ```
 
 The Docker image build calls the web workspace's own build script, so the container does not need Turborepo to run.
