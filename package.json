@@ -19,6 +19,7 @@
     "test": "turbo run test",
     "check": "bash scripts/hooks/pre-push --local",
     "smoke": "node scripts/smoke.mjs",
+    "e2e": "node tests/e2e/run.mjs",
     "docs:check": "node scripts/check-docs.mjs",
     "prepare": "node scripts/prepare.mjs"
   },
