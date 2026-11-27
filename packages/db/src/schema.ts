@@ -10,7 +10,7 @@
  * Every domain row carries `groupId`, and every query in the API filters on it.
  */
 import { sql } from 'drizzle-orm';
-import { bigint, boolean, index, jsonb, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import { bigint, boolean, customType, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 
 // ---- Better Auth ----------------------------------------------------------------------------
 
@@ -218,4 +218,41 @@ export const alerts = pgTable(
       .where(sql`${t.slotId} is not null`),
     index('alert_group_time_idx').on(t.groupId, t.atMs),
   ],
+);
+
+// ---- Custom voice ----------------------------------------------------------------------------
+
+/** Raw bytes. node-postgres and PGlite hand back different byte types, so both are turned into a Uint8Array. */
+const bytea = customType<{ data: Uint8Array; driverData: Uint8Array | Buffer }>({
+  dataType: () => 'bytea',
+  toDriver: (v) => Buffer.from(v),
+  fromDriver: (v) => new Uint8Array(v),
+});
+
+/**
+ * A family member's own recording of one of Kaabil's fixed sentences, played to the person instead
+ * of the synthetic voice. The sentence is stored with the clip, and the person's phone finds a clip
+ * only by the exact sentence it is about to say, so Kaabil still speaks nothing it was not written to say.
+ * Stored only with the recorder's consent, and deletable.
+ */
+export const voiceClips = pgTable(
+  'voice_clips',
+  {
+    id: text('id').primaryKey(),
+    groupId: text('group_id')
+      .notNull()
+      .references(() => careGroups.id, { onDelete: 'cascade' }),
+    lang: text('lang').notNull(),
+    /** A short hash of lang and sentence. The family's screen uses it as the clip's name. */
+    textHash: text('text_hash').notNull(),
+    messageKey: text('message_key').notNull(),
+    text: text('text').notNull(),
+    contentType: text('content_type').notNull(),
+    audio: bytea('audio').notNull(),
+    size: integer('size').notNull(),
+    recordedBy: text('recorded_by').notNull(),
+    consentAt: timestamp('consent_at', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('voice_group_lang_hash_idx').on(t.groupId, t.lang, t.textHash)],
 );
