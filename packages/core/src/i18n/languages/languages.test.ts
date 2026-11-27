@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { detectLang, interpret } from '../../voice/words';
-import type { MessageKey } from '../../types';
+import { MESSAGE_KEYS } from '../../types';
 import { defineLanguage, type MessageTable, type UiStrings, type WordLists } from '../language';
 import { render, ui } from '../messages';
 import { getLanguage, isLangCode, LANGUAGES } from './index';
 
-const KEYS: MessageKey[] = ['remind', 'confirm_log', 'logged', 'snooze', 'already_logged', 'not_logged', 'clarify', 'escalated', 'emergency', 'buttons', 'help', 'stopped'];
+const KEYS = MESSAGE_KEYS;
 const WORD_KEYS: (keyof WordLists)[] = ['yes', 'no', 'claim', 'later', 'stop', 'help', 'repeat', 'emergency'];
 const UI_KEYS: (keyof UiStrings)[] = ['startHint', 'tryHint', 'typedLabel', 'typedPlaceholder', 'send', 'sos', 'disclaimer', 'close', 'speakAria', 'micBlocked', 'micUnsupported', 'noVoice'];
 const VARS = { address: 'Amma', name: 'Metformin', strength: '500' };
