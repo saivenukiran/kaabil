@@ -70,7 +70,7 @@ Every number here is a **target**, not a result, unless the row says it is built
 
 | Level | What | Release |
 |---|---|---|
-| Unit | Word rules, dialogue, parser, language completeness | P, built (132 tests) |
+| Unit | Word rules, dialogue, parser, language completeness | P, built (133 tests) |
 | Scenario | 12 dose scenarios against the real engine, also shown in the Test panel | P, built |
 | API | Endpoints, roles, idempotency, limits, deletion | F |
 | End to end | A scripted browser test of the dose flow with text input; two-device alert test | F |

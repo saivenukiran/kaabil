@@ -35,7 +35,7 @@ Without Docker (Node 24):
 npm ci
 npm run dev          # http://localhost:5173
 npm run typecheck    # every package
-npm test             # 132 tests in packages/core, plus the tests of packages/contract and apps/api
+npm test             # 133 tests in packages/core, plus the tests of packages/contract and apps/api
                      # (the API tests run on an in-process Postgres: no Docker needed)
 npm run build        # typecheck + production build into apps/web/dist
 npm run check        # everything the pre-push guard runs
@@ -173,7 +173,7 @@ The family adds medicines with a line such as `Metformin 500, 1-0-1` (morning, n
 
 ## 7. Test coverage
 
-`npm test` runs 132 tests (Vitest) in `packages/core`:
+`npm test` runs 133 tests (Vitest) in `packages/core`:
 
 | Group | What it covers |
 |---|---|
