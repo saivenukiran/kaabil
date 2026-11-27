@@ -1,0 +1,8 @@
+# Security headers for the screens served from this Worker. The same set nginx sends in the Docker image
+# (nginx.conf), so a phone gets the same protection on Cloudflare. Answers from /api carry the API's own headers.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  X-Frame-Options: DENY
+  Permissions-Policy: microphone=(self), camera=(self), geolocation=()
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'

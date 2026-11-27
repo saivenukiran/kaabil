@@ -22,6 +22,8 @@ rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
 cpSync(join(root, 'apps', 'web', 'dist'), out, { recursive: true });
 cpSync(join(root, 'apps', 'testpage', 'dist'), join(out, 'test'), { recursive: true });
+// the security headers for the screens (Cloudflare reads this file from the assets folder)
+cpSync(join(root, 'packages', 'edge', '_headers'), join(out, '_headers'));
 if (!existsSync(join(out, 'index.html')) || !existsSync(join(out, 'test', 'index.html'))) {
   console.log('The assets are incomplete.');
   process.exit(1);
