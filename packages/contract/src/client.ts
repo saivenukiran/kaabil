@@ -9,6 +9,7 @@ import {
   AlertResultSchema,
   AlertSchema,
   DoseListSchema,
+  DeviceClipListSchema,
   DoseSchema,
   ErrorBodySchema,
   GroupSchema,
@@ -19,6 +20,7 @@ import {
   PairingCodeSchema,
   PlanSchema,
   SttResultSchema,
+  VoiceOverviewSchema,
   VoiceStatusSchema,
   type AlertInput,
   type CreateGroup,
@@ -76,6 +78,16 @@ export function createClient(options: ClientOptions = {}) {
     return schema.parse(json);
   }
 
+  /** A request whose body or answer is raw bytes (audio). Errors still come back as ApiError. */
+  async function binary(method: string, path: string, headers: Record<string, string>, body?: Blob): Promise<Response> {
+    const res = await doFetch(`${base}${path}`, { method, headers, body });
+    if (!res.ok) {
+      const e = ErrorBodySchema.safeParse(safeJson(await res.text()));
+      throw new ApiError(res.status, e.success ? e.data.error.code : 'http_error', e.success ? e.data.error.message : `Request failed (${res.status})`);
+    }
+    return res;
+  }
+
   const family = (method: string, path: string, schema: z.ZodType, body?: unknown) => send(method, path, schema, { body });
   const device = async (method: string, path: string, schema: z.ZodType, body?: unknown) => send(method, path, schema, { body, headers: deviceHeaders() });
   const Ok = z.object({ ok: z.literal(true) }).strict();
@@ -112,6 +124,15 @@ export function createClient(options: ClientOptions = {}) {
       acknowledge: (id: string, alertId: string) => family('POST', `${g(id)}/alerts/${encodeURIComponent(alertId)}/ack`, AlertSchema) as Promise<z.infer<typeof AlertSchema>>,
       /** Returns a function that closes the stream. Reconnects by itself. */
       events: (id: string, h: EventHandlers) => stream(`${g(id)}/events`, {}, h),
+
+      /** Custom voice. The sentences Kaabil will say for this person, and which already have a recording. */
+      voice: (id: string) => family('GET', `${g(id)}/voice`, VoiceOverviewSchema) as Promise<z.infer<typeof VoiceOverviewSchema>>,
+      /** Upload a recording of one sentence. `consent` must be true: the recorder agrees it is stored and played to the person. */
+      uploadClip: (id: string, textHash: string, audio: Blob, consent: boolean) =>
+        binary('PUT', `${g(id)}/voice/${encodeURIComponent(textHash)}`, { 'content-type': audio.type, ...(consent ? { 'x-voice-consent': 'yes' } : {}) }, audio).then(() => undefined),
+      deleteClip: (id: string, textHash: string) => family('DELETE', `${g(id)}/voice/${encodeURIComponent(textHash)}`, Ok),
+      deleteAllClips: (id: string) => family('DELETE', `${g(id)}/voice`, Ok),
+      clipAudio: (id: string, textHash: string) => binary('GET', `${g(id)}/voice/${encodeURIComponent(textHash)}/audio`, {}).then((r) => r.blob()),
     },
 
     device: {
@@ -128,6 +149,9 @@ export function createClient(options: ClientOptions = {}) {
       postDose: (v: DoseInput) => device('POST', '/api/device/doses', DoseSchema, v) as Promise<z.infer<typeof DoseSchema>>,
       postAlert: (v: AlertInput) => device('POST', '/api/device/alerts', AlertResultSchema, v) as Promise<z.infer<typeof AlertResultSchema>>,
       events: (h: EventHandlers) => stream('/api/device/events', deviceHeaders(), h),
+      /** The recordings the family made, to match against what this phone is about to say. */
+      voiceClips: () => device('GET', '/api/device/voice', DeviceClipListSchema) as Promise<z.infer<typeof DeviceClipListSchema>>,
+      clipAudio: async (textHash: string) => (await binary('GET', `/api/device/voice/${encodeURIComponent(textHash)}/audio`, deviceHeaders())).blob(),
     },
 
     voice: {

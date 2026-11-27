@@ -1,0 +1,21 @@
+{
+  "name": "@kaabil/voice",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Kaabil speech for the browser: one SpeechPort (Web Speech API, or a recorded clip of a family member), and the framework-free turn loop that speaks, listens and feeds the dialogue.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@kaabil/core": "*"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.2"
+  }
+}

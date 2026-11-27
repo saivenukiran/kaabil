@@ -133,6 +133,24 @@ export async function apiChecks(base, check) {
   const dev = await fetch(base + '/dev');
   const devCsp = dev.headers.get('content-security-policy') ?? '';
   check('the test console is served at /dev with its own policy', dev.status === 200 && devCsp.includes("script-src 'self' 'unsafe-inline'"), `status ${dev.status}`);
+  // Custom voice: a family member records a fixed sentence; the phone gets exactly that sentence and its audio.
+  const overview = await json(await call(family, 'GET', `${g}/voice`));
+  const remind = overview?.sentences?.find((x) => x.key === 'remind');
+  check('the family can list the sentences Kaabil says to the person', Boolean(remind) && /^[0-9a-f]{16}$/.test(remind?.textHash ?? ''), JSON.stringify(overview)?.slice(0, 120));
+  const fakeWav = new Uint8Array(600).fill(5);
+  fakeWav.set([...'RIFF'].map((c) => c.charCodeAt(0)), 0);
+  fakeWav.set([...'WAVE'].map((c) => c.charCodeAt(0)), 8);
+  const put = (hash, headers) => fetch(base + `${g}/voice/${hash}`, { method: 'PUT', headers: { origin, cookie: family.cookie, 'content-type': 'audio/wav', ...headers }, body: fakeWav });
+  check('a recording needs the recorder\'s consent', (await put(remind?.textHash, {})).status === 400);
+  check('a sentence Kaabil does not say cannot be recorded', (await put('0123456789abcdef', { 'x-voice-consent': 'yes' })).status === 404);
+  check('a recording with consent is saved', (await put(remind?.textHash, { 'x-voice-consent': 'yes' })).status === 204);
+  const clips = await json(await call(null, 'GET', '/api/device/voice', undefined, auth));
+  check('the phone is given the sentence to match, not a way to say anything else', clips?.clips?.length === 1 && clips.clips[0].text === remind?.text, JSON.stringify(clips)?.slice(0, 120));
+  const audio = await fetch(base + `/api/device/voice/${remind?.textHash}/audio`, { headers: auth });
+  check('the phone can fetch the recording, served as audio and not sniffed', audio.status === 200 && audio.headers.get('content-type') === 'audio/wav' && audio.headers.get('x-content-type-options') === 'nosniff', `status ${audio.status}`);
+  check('the other family cannot fetch it', (await call(other, 'GET', `${g}/voice`)).status === 404);
+  check('the family can delete all recordings', (await call(family, 'DELETE', `${g}/voice`)).status === 200 && (await json(await call(null, 'GET', '/api/device/voice', undefined, auth)))?.clips?.length === 0);
+
   const status = await json(await call(null, 'GET', '/api/voice/status'));
   check('cloud voice says "key not set" when there is no key', status?.stt === 'key not set' && status?.tts === 'key not set', JSON.stringify(status));
 }

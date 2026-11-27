@@ -1,8 +1,9 @@
 /** Builds the Hono application from its dependencies, so tests can run the whole thing against an in-process database. */
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { secureHeaders } from 'hono/secure-headers';
 import type { Logger } from 'pino';
+import { VOICE_MAX_BYTES } from '@kaabil/contract';
 import { body, onError } from './http';
 import { careRoutes } from './routes/care';
 import { devRoutes } from './routes/dev';
@@ -36,7 +37,11 @@ export function createApp(d: Deps) {
     }),
   );
   // JSON bodies are small. Audio for speech recognition has its own, larger limit on its own route.
-  app.use('/api/care/*', bodyLimit({ maxSize: 64 * 1024, onError: (c) => c.json(body('too_large', 'That is too big'), 413) }));
+  const tooBig = (c: Context) => c.json(body('too_large', 'That is too big'), 413);
+  const jsonLimit = bodyLimit({ maxSize: 64 * 1024, onError: tooBig });
+  const clipLimit = bodyLimit({ maxSize: VOICE_MAX_BYTES, onError: tooBig });
+  // Only a recording upload may be large.
+  app.use('/api/care/*', (c, next) => (c.req.method === 'PUT' && /\/voice\/[^/]+$/.test(c.req.path) ? clipLimit(c, next) : jsonLimit(c, next)));
   app.use('/api/device/*', bodyLimit({ maxSize: 64 * 1024, onError: (c) => c.json(body('too_large', 'That is too big'), 413) }));
   app.use('/api/*', async (c, next) => {
     await next();

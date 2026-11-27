@@ -8,7 +8,7 @@ Elders' medicine and health information is sensitive. We collect the least we ca
 
 | # | Rule |
 |---|---|
-| D1 | Text transcripts only. **Audio is never stored** by our code. |
+| D1 | Text transcripts only. **The person's audio is never stored** by our code. The one exception is a family member's own recording of a fixed sentence (FR-LANG-11): made on purpose, with their consent, stored so the person's phone can play it, and deletable. |
 | D2 | Alerts reach the family only with consent, and the screen says who will be told. |
 | D3 | Every kept item has a stated reason and a stated retention period. |
 | D4 | The family can delete everything about the person, and the screen says how long backups keep it. |
@@ -29,7 +29,8 @@ Elders' medicine and health information is sensitive. We collect the least we ca
 | Family email | To sign in and notify | None | Server | Until deleted |
 | Push subscription | To notify | None | Server | Until the device is revoked |
 | Pill photo | To read a strip | None | Not kept | Deleted after the answer (chapter 6) |
-| Audio | Not kept | None | Not kept | Never stored by our code |
+| The person's audio | Not kept | None | Not kept | Never stored by our code |
+| A family member's recording of a fixed sentence | To play it to the person | None (the app screens do not use it yet) | Server, as audio bytes with the sentence it says | Until the family deletes it, or the group is deleted |
 
 ## Requirements
 
@@ -37,7 +38,7 @@ Elders' medicine and health information is sensitive. We collect the least we ca
 
 | AC | Given | When | Then |
 |---|---|---|---|
-| AC-PRIV-01-1 | Setup | the family reaches consent | plain wording (in the family's language) says what is kept, where, for how long, who sees alerts, and that audio is not stored |
+| AC-PRIV-01-1 | Setup | the family reaches consent | plain wording (in the family's language) says what is kept, where, for how long, who sees alerts, and that the person's audio is not stored (only a family member's own recordings, made with their consent) |
 | AC-PRIV-01-2 | The wording changes | the family next opens the app | they are asked to read and accept it again; the version is recorded |
 | AC-PRIV-01-3 | Browser speech recognition is used (P) | the screen explains | it says the browser's vendor may process the audio, which we do not control |
 | AC-PRIV-01-4 | A cloud speech or vision provider is used (F) | the screen explains | it names the provider and what is sent |
@@ -108,6 +109,6 @@ Elders' medicine and health information is sensitive. We collect the least we ca
 
 | Kind | How |
 |---|---|
-| Automated | A test that audio objects never reach storage; a log-scan test with marker text; deletion tests against a test database |
+| Automated | A test that the person's audio never reaches storage (family recordings are the only audio kept, and only with consent); a log-scan test with marker text; deletion tests against a test database |
 | Review | Legal review of the notice and the retention table before F |
 | Manual | Delete all data, then reload: the app starts empty |

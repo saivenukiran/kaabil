@@ -143,6 +143,7 @@ export const EventSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('plan'), at: z.number() }).strict(),
   z.object({ type: z.literal('device'), device: DeviceSchema.nullable(), removedId: z.string().optional() }).strict(),
   z.object({ type: z.literal('remind'), medicineId: z.string().optional(), at: z.number() }).strict(),
+  z.object({ type: z.literal('voice'), at: z.number() }).strict(),
   z.object({ type: z.literal('ping'), at: z.number() }).strict(),
 ]);
 export type ServerEvent = z.infer<typeof EventSchema>;
@@ -159,6 +160,38 @@ export const SttResultSchema = z.object({ text: z.string() }).strict();
 export const TtsRequestSchema = z
   .object({ key: MessageKeySchema, lang: LangSchema, vars: z.object({ address: z.string().max(40), name: z.string().max(80), strength: z.string().max(20) }).partial().strict() })
   .strict();
+
+/**
+ * Custom voice: a family member records their own voice reading one of Kaabil's fixed sentences.
+ * The person's phone plays the recording instead of the synthetic voice, only for that exact sentence.
+ */
+export const VOICE_MAX_BYTES = 1_500_000;
+export const VOICE_MAX_SECONDS = 15;
+export const VOICE_CONTENT_TYPES = ['audio/wav', 'audio/x-wav', 'audio/webm', 'audio/ogg', 'audio/mp4', 'audio/mpeg'] as const;
+
+const TextHashSchema = z.string().regex(/^[0-9a-f]{16}$/);
+
+export const VoiceSentenceSchema = z
+  .object({
+    key: MessageKeySchema,
+    lang: LangSchema,
+    text: z.string(),
+    textHash: TextHashSchema,
+    medicineName: z.string().optional(),
+    clip: z.object({ contentType: z.string(), size: z.number(), createdAt: z.number() }).strict().nullable(),
+  })
+  .strict();
+export type VoiceSentence = z.infer<typeof VoiceSentenceSchema>;
+
+export const VoiceOverviewSchema = z
+  .object({ sentences: z.array(VoiceSentenceSchema), maxBytes: z.number(), maxSeconds: z.number() })
+  .strict();
+export type VoiceOverview = z.infer<typeof VoiceOverviewSchema>;
+
+/** What the person's phone needs to find a recording: the sentence, to match against what it is about to say. */
+export const DeviceClipSchema = z.object({ lang: LangSchema, text: z.string(), textHash: TextHashSchema, contentType: z.string(), size: z.number() }).strict();
+export const DeviceClipListSchema = z.object({ clips: z.array(DeviceClipSchema) }).strict();
+export type DeviceClip = z.infer<typeof DeviceClipSchema>;
 
 export const HealthSchema = z.object({ ok: z.literal(true), version: z.string() }).strict();
 

@@ -32,6 +32,7 @@ One voice companion, so the person never learns four apps. The person talks to K
 | Daily check-in | Once a day: "How are you? Did you eat?" Emergency phrases show a 112 button and alert the family. | Emergency phrases built; check-in is a placeholder |
 | Link guard | A risky link opens nothing until the person confirms twice. | Placeholder |
 | Send to family | "Tell my son the medicine is finished"; the reply is read aloud. | Placeholder |
+| Your own voice | A family member records their own voice reading Kaabil's fixed sentences, and the person's phone plays it instead of the synthetic voice. Kaabil still says only its fixed sentences. | **Built** in the backend and the test page; not yet in the app screens |
 
 Languages: the prototype works in Telugu (first) and English. Every word in a language lives in one file, so adding a language is one new file (see `packages/core/src/i18n/languages/README.md`). Nine more Indian languages (Hindi, Tamil, Kannada, Malayalam, Marathi, Bengali, Gujarati, Punjabi, Odia) are data-only phrase packs, not yet reviewed by native speakers.
 
@@ -52,7 +53,8 @@ Platform: a mobile-first web app (PWA). Native apps come later, because only a n
 | R9 | Works in Telugu and English, and replies in the language the person used. A new language needs one file and passes the completeness test. | `english`, `languages.test.ts` |
 | R10 | Works without a microphone or a Telugu voice: Yes/No buttons and a text box do the same job. | Manual: README, step 6 |
 | R11 | The family sets up medicines by typing a line such as `Metformin 500, 1-0-1` (morning and night). | Unit tests for the parser |
-| R12 | Only text transcripts are kept, in the browser. Audio is never stored. "Delete all data" erases everything. | Code review: `deleteAllData` |
+| R12 | Only text transcripts are kept, in the browser. The person's audio is never stored. "Delete all data" erases everything. | Code review: `deleteAllData` |
+| R13 | A family member can record their own voice reading Kaabil's fixed sentences. The person's phone plays that recording instead of the synthetic voice, only for that exact sentence. Nothing is stored without the recorder's consent, and it can be deleted. This is the one case where audio is stored. | API tests, smoke test, end-to-end script |
 
 ## 5. Safety rules (non-negotiable)
 
@@ -87,6 +89,8 @@ Main risk: speech recognition is weakest for the people we serve (slurred or slo
 | Missed-dose, repeated-dose and emergency alerts | Created by the dose dialogue; the backend stores them and streams them live to the family; push notifications are not set up |
 | Backend: family sign-in, care group, one-time pairing code for the person's phone, plan sync, idempotent dose log, alerts, live events, and a server check for missed doses | Built and tested (API tests on an in-process Postgres, a smoke test through the proxy); driven today by a plain test console |
 | The app screens on the backend | Not connected yet: the screens still keep their state in the browser |
+| Your own voice: recorded in the browser, trimmed and evened out, stored with consent, played on the person's phone | Built and tested (API, audio processing, clip player, smoke test, an end-to-end script); not verified on real phones |
+| A plain test page at `/test/` with the family phone and the person's phone side by side on the real backend, and three end-to-end scripts run with TestSutra | Built; the three scripts pass in a real browser |
 | Family setup from text | Works |
 | Pill check, daily check-in, link guard, send to family | Placeholders |
 | Cloud Indic speech and the vision model | "Key not set" placeholders; the prototype needs no keys |
@@ -97,6 +101,7 @@ Main risk: speech recognition is weakest for the people we serve (slurred or slo
 - `docker compose up --build` has not been run on the machine that built this repo (it has no Docker). The compose file and the image build are written to be standard.
 - Real microphone and Telugu speech recognition on a phone.
 - A Telugu text-to-speech voice on a phone. On the Windows PC that built this repo, the Voice check tab found 22 browser voices and none for Telugu, so there Kaabil shows each Telugu sentence large on screen instead of speaking it (English is spoken). A phone's Telugu voice depends on its installed speech engine and is not measured.
+- Recording from a real phone's microphone and playing the recording there (the end-to-end test uploads a generated audio file).
 - Two real phones on the live backend. The backend flow has run only in tests and in the test console, on one machine.
 - The Telugu wording has not been reviewed by a native speaker.
 
