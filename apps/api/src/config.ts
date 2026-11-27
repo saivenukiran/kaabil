@@ -21,6 +21,8 @@ export interface Config {
   /** How often the server checks for missed doses. */
   sweepEveryMs: number;
   logLevel: string;
+  /** A Cloudflare Realtime TURN key, so calls can connect through a relay when a direct path is blocked. Optional. */
+  turn?: { keyId: string; apiToken: string };
 }
 
 type Env = Record<string, string | undefined>;
@@ -44,6 +46,8 @@ export function loadConfig(env: Env = process.env, read?: (p: string) => string)
   const databaseUrl =
     env.DATABASE_URL ??
     `postgres://${env.DB_USER ?? 'kaabil'}:${encodeURIComponent(need(dbPassword, 'DB_PASSWORD'))}@${env.DB_HOST ?? 'db'}:${env.DB_PORT ?? '5432'}/${env.DB_NAME ?? 'kaabil'}`;
+  const turnToken = readSecret(env, 'CF_TURN_API_TOKEN', read);
+  const turn = env.CF_TURN_KEY_ID && turnToken ? { keyId: env.CF_TURN_KEY_ID, apiToken: turnToken } : undefined;
   return {
     port: Number(env.PORT ?? 3000),
     baseUrl,
@@ -58,6 +62,7 @@ export function loadConfig(env: Env = process.env, read?: (p: string) => string)
     missedAfterMs: Number(env.MISSED_AFTER_MS ?? 22 * 60_000),
     sweepEveryMs: Number(env.SWEEP_EVERY_MS ?? 60_000),
     logLevel: env.LOG_LEVEL ?? 'info',
+    ...(turn ? { turn } : {}),
   };
 }
 

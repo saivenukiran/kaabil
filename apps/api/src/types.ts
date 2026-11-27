@@ -17,4 +17,6 @@ export interface Deps {
   /** Epoch ms. Tests pass a fake clock. */
   now: () => number;
   log: Logger;
+  /** For calls to other services (the relay's credentials). Tests pass a fake. Defaults to the global fetch. */
+  fetch?: typeof fetch;
 }
