@@ -30,13 +30,13 @@ export const te = defineLanguage({
     no: ['కాదు', 'కాదండి', 'వద్దు', 'వద్దండి', 'నో'],
     // Telugu attaches negation to the verb (వేసుకోలేదు = "did not take"), so match word endings.
     noSuffix: ['లేదు', 'లేను', 'లేవు', 'లేరు', 'లేదండి'],
-    claim: ['వేసుకున్నాను', 'వేసుకున్నా', 'వేసుకొన్నాను', 'వేసుకొన్నా', 'తీసుకున్నాను', 'తీసుకున్నా', 'తీసుకొన్నాను', 'తీసుకొన్నా'],
-    later: ['ఇంకా', 'తర్వాత'],
+    claim: ['వేసుకున్నాను', 'వేసుకున్నా', 'వేసుకొన్నాను', 'వేసుకొన్నా', 'తీసుకున్నాను', 'తీసుకున్నా', 'తీసుకొన్నాను', 'తీసుకొన్నా', 'వేసుకున్నానండి', 'తీసుకున్నానండి'],
+    later: ['ఇంకా', 'తర్వాత', 'తరువాత'],
     stop: ['ఆపు', 'ఆపండి'],
     help: ['సహాయం'],
     repeat: ['మళ్ళీ చెప్పు', 'మళ్లీ చెప్పు', 'మళ్ళీ చెప్పండి', 'మళ్లీ చెప్పండి'],
     // Substring match on purpose: Telugu words carry suffixes (పడిపోయాను, పడిపోయారు).
-    emergency: ['ఛాతీ నొప్పి', 'ఛాతీలో నొప్పి', 'ఛాతి నొప్పి', 'పడిపోయ'],
+    emergency: ['ఛాతీ నొప్పి', 'ఛాతీలో నొప్పి', 'ఛాతి నొప్పి', 'ఛాతిలో నొప్పి', 'చాతీ నొప్పి', 'చాతీలో నొప్పి', 'చాతి నొప్పి', 'చాతిలో నొప్పి', 'పడిపోయ'],
   },
   // Only the Telugu already in the team's prompt. The rest of the person screen shows the
   // English text until a native speaker supplies and reviews the Telugu.

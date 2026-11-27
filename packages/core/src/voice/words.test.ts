@@ -27,6 +27,16 @@ describe('interpret: Yes and No are decided by word rules', () => {
     ['', 'unclear'],
     ['blah blah', 'unclear'],
     ['ఏమో', 'unclear'],
+    // spellings and endings a speech model wrote for the same words (found by the Vertex test)
+    ['వేసుకున్నానండి', 'claim'], // "I took it, sir": the polite ending joined on
+    ['తీసుకున్నానండి', 'claim'],
+    ['తరువాత', 'notyet'], // the other spelling of "later"
+    ['ఛాతిలో నొప్పిగా ఉంది', 'emergency'], // chest pain, with a short vowel
+    ['చాతీ నొప్పి', 'emergency'], // and with the other first letter
+    ['చాతిలో నొప్పి', 'emergency'],
+    // not a claim by the person: "they took it". Must stay unclear so a wrong word never logs a dose
+    ['వేసుకున్నారు', 'unclear'],
+    ['సర్వే', 'unclear'],
   ];
   for (const [text, intent] of cases) {
     it(`"${text}" -> ${intent}`, () => expect(interpret(text)).toBe(intent));
