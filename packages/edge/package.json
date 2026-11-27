@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "build:assets": "node scripts/build-assets.mjs",
+    "up": "node scripts/up.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
