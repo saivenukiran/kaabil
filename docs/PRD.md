@@ -94,7 +94,7 @@ Main risk: speech recognition is weakest for the people we serve (slurred or slo
 
 - `docker compose up --build` has not been run on the machine that built this repo (it has no Docker). The compose file and the image build are written to be standard.
 - Real microphone and Telugu speech recognition on a phone.
-- A Telugu text-to-speech voice on a phone.
+- A Telugu text-to-speech voice on a phone. On the Windows PC that built this repo, the Voice check tab found 22 browser voices and none for Telugu, so there Kaabil shows each Telugu sentence large on screen instead of speaking it (English is spoken). A phone's Telugu voice depends on its installed speech engine and is not measured.
 - The Telugu wording has not been reviewed by a native speaker.
 
 ## 8. Out of scope for this prototype
