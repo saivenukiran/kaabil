@@ -4,6 +4,8 @@
 //   npm run e2e                          # http://localhost:8080
 //   npm run e2e -- http://localhost:8080 # another address
 //
+// KAABIL_E2E_ATTACH=<DevTools address> drives a browser that is already running (for example one started with a fake microphone) and runs only the
+// scripts that need a microphone; without it those are skipped and the rest run in fresh browsers.
 // TestSutra is found as `testsutra` on the PATH, or through KAABIL_TESTSUTRA=<path to the exe>.
 // It drives a browser you already have (Chrome, Edge or Firefox). Exit codes: 0 every script
 // passed, 1 a script failed, 2 it could not run (no TestSutra, or nothing at the address).
@@ -16,6 +18,7 @@ import { SCRIPTS } from './scripts.mjs';
 
 const base = (process.argv.slice(2).find((a) => /^https?:\/\//.test(a)) ?? 'http://localhost:8080').replace(/\/$/, '');
 const exe = process.env.KAABIL_TESTSUTRA ?? 'testsutra';
+const attach = process.env.KAABIL_E2E_ATTACH ?? '';
 const work = join(tmpdir(), `kaabil-e2e-${Date.now()}`);
 const results = 'test-results';
 mkdirSync(work, { recursive: true });
@@ -57,7 +60,10 @@ if (!health) {
 }
 
 let failed = 0;
-for (const [i, s] of SCRIPTS.entries()) {
+// An attached browser keeps its cookies and storage between scripts, so it runs only the scripts that need its microphone; the rest run in fresh browsers.
+const scripts = SCRIPTS.filter((s) => Boolean(s.needsMicrophone) === Boolean(attach));
+if (!attach && scripts.length < SCRIPTS.length) console.log(`Skipping ${SCRIPTS.length - scripts.length} script(s) that need a microphone (set KAABIL_E2E_ATTACH, see tests/e2e/scripts.mjs).`);
+for (const [i, s] of scripts.entries()) {
   const script = {
     id: randomUUID(),
     name: s.name,
@@ -70,7 +76,7 @@ for (const [i, s] of SCRIPTS.entries()) {
   const file = join(work, `${String(i + 1).padStart(2, '0')}.json`);
   writeFileSync(file, JSON.stringify(script, null, 2));
   console.log(`\n== ${i + 1}. ${s.name}`);
-  const r = spawnSync(exe, ['run', '--script', file, '--url', base, '--output', join(results, String(i + 1)), '--report', 'md,json'], { stdio: 'inherit' });
+  const r = spawnSync(exe, ['run', '--script', file, '--url', base, '--output', join(results, String(i + 1)), '--report', 'md,json', ...(attach ? ['--attach', attach] : [])], { stdio: 'inherit' });
   if (r.error) {
     console.log(`Could not start TestSutra (${exe}): ${r.error.message}\nSet KAABIL_TESTSUTRA to the path of testsutra-windows-x64.exe.`);
     rmSync(work, { recursive: true, force: true });
@@ -79,5 +85,5 @@ for (const [i, s] of SCRIPTS.entries()) {
   if (r.status !== 0) failed += 1;
 }
 rmSync(work, { recursive: true, force: true });
-console.log(failed === 0 ? `\nAll ${SCRIPTS.length} end-to-end scripts passed. Reports are in ${results}/.` : `\n${failed} of ${SCRIPTS.length} end-to-end scripts failed. See ${results}/.`);
+console.log(failed === 0 ? `\nAll ${scripts.length} end-to-end scripts passed. Reports are in ${results}/.` : `\n${failed} of ${scripts.length} end-to-end scripts failed. See ${results}/.`);
 process.exit(failed === 0 ? 0 : 1);
