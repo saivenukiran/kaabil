@@ -9,6 +9,7 @@ import { allowedOrigins } from '../config';
 import { HttpError, notFound, parseBody, unauthorized } from '../http';
 import { alertDto, doseDto, groupDto, listAlerts, listDoses, medicineDto, requireMember } from '../repo';
 import { newId, newPairingCode, originAllowed, sha256 } from '../security';
+import { deleteAllClips, deleteClip, getClipAudio, saveClip, voiceOverview } from '../voiceClips';
 import type { Deps } from '../types';
 
 const { careGroups, medicines, devices, pairingCodes, alerts, member } = schema;
@@ -200,6 +201,43 @@ export function careRoutes(d: Deps) {
         off();
       }
     });
+  });
+
+  // ---- Custom voice: the family member's own recordings of Kaabil's fixed sentences
+  app.get('/groups/:id/voice', async (c) => {
+    const id = c.req.param('id');
+    await requireMember(d.db, c.get('user').id, id);
+    return c.json(await voiceOverview(d, id));
+  });
+
+  app.put('/groups/:id/voice/:hash', async (c) => {
+    const id = c.req.param('id');
+    const u = c.get('user');
+    await requireMember(d.db, u.id, id);
+    const bytes = new Uint8Array(await c.req.arrayBuffer());
+    await saveClip(d, id, u.id, c.req.param('hash'), c.req.header('content-type'), c.req.header('x-voice-consent'), bytes);
+    return c.body(null, 204);
+  });
+
+  app.get('/groups/:id/voice/:hash/audio', async (c) => {
+    const id = c.req.param('id');
+    await requireMember(d.db, c.get('user').id, id);
+    const clip = await getClipAudio(d, id, c.req.param('hash'));
+    return new Response(clip.bytes as unknown as ConstructorParameters<typeof Response>[0], { status: 200, headers: { 'Content-Type': clip.type, 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'no-store' } });
+  });
+
+  app.delete('/groups/:id/voice/:hash', async (c) => {
+    const id = c.req.param('id');
+    await requireMember(d.db, c.get('user').id, id);
+    await deleteClip(d, id, c.req.param('hash'));
+    return c.json({ ok: true as const });
+  });
+
+  app.delete('/groups/:id/voice', async (c) => {
+    const id = c.req.param('id');
+    await requireMember(d.db, c.get('user').id, id);
+    await deleteAllClips(d, id);
+    return c.json({ ok: true as const });
   });
 
   return app;

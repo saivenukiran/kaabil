@@ -12,6 +12,7 @@ import { createAlert } from '../alertsService';
 import { HttpError, parseBody, unauthorized } from '../http';
 import { deviceDto, doseDto, listMedicines, planFor } from '../repo';
 import { bearer, newDeviceToken, newId, RateLimiter, sha256 } from '../security';
+import { deviceClips, getClipAudio } from '../voiceClips';
 import type { Deps } from '../types';
 
 const { devices, pairingCodes, doseEvents } = schema;
@@ -114,6 +115,18 @@ export function deviceRoutes(d: Deps) {
         off();
       }
     });
+  });
+
+  // The family's recordings: the phone lists them (with the sentence each one says) and fetches the audio.
+  app.get('/voice', async (c) => c.json({ clips: await deviceClips(d, c.get('device').groupId) }));
+
+  app.get('/voice/:hash/audio', async (c) => {
+    const groupId = c.get('device').groupId;
+    const hash = c.req.param('hash');
+    // Only a recording of a sentence Kaabil still says can be fetched.
+    if (!(await deviceClips(d, groupId)).some((k) => k.textHash === hash)) throw new HttpError(404, 'not_found', 'No such recording');
+    const clip = await getClipAudio(d, groupId, hash);
+    return new Response(clip.bytes as unknown as ConstructorParameters<typeof Response>[0], { status: 200, headers: { 'Content-Type': clip.type, 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'no-store' } });
   });
 
   return app;
