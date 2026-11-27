@@ -71,6 +71,14 @@ for (const m of fsdReadme.matchAll(/^\| \d+ \| \[[^\]]+\]\(([^)]+\.md)\) \| [^|]
   if (actual !== Number(m[2])) problems.push(`docs/fsd/README.md: chapter ${m[1]} listed with ${m[2]} requirements, it has ${actual}.`);
 }
 
+// 4. The generated API reference matches the route list (docs/api/endpoints.md and openapi.json)
+{
+  const gen = spawnSync(process.execPath, [join(dirname(require.resolve('tsx/package.json')), 'dist', 'cli.mjs'), 'scripts/gen-api-docs.mjs', '--check'], { encoding: 'utf8' });
+  const said = ((gen.stdout ?? '') + (gen.stderr ?? '')).trim().split('\n').pop() ?? '';
+  if (gen.status === 0) ok.push('docs/api: ' + said);
+  else problems.push('docs/api: ' + (said || 'the API reference could not be checked') + '');
+}
+
 for (const line of ok) console.log('ok    ' + line);
 for (const line of problems) console.log('FAIL  ' + line);
 console.log(problems.length === 0 ? `\nDocs numbers match the code (${total} tests, ${scenarios} scenarios, ${frs} requirements).` : `\n${problems.length} number(s) in the docs are out of date.`);
