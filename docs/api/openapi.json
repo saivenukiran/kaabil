@@ -1,0 +1,3863 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Kaabil API",
+    "version": "0.1.0",
+    "description": "The backend of Kaabil Hain Hum. Generated from the route list; see docs/api/README.md. Family sign-in endpoints under /api/auth/ belong to Better Auth and are not described here."
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "tags": [
+    {
+      "name": "system",
+      "description": "System"
+    },
+    {
+      "name": "family",
+      "description": "Family: the account, the care group, medicines, pairing, doses and alerts"
+    },
+    {
+      "name": "phone",
+      "description": "The person's phone"
+    },
+    {
+      "name": "live",
+      "description": "Live events: streams and long polling"
+    },
+    {
+      "name": "voice",
+      "description": "Voice: custom voice recordings, and cloud voice status"
+    },
+    {
+      "name": "calls",
+      "description": "Calls"
+    },
+    {
+      "name": "dev",
+      "description": "Developer console (only when KAABIL_DEV_CONSOLE=1)"
+    }
+  ],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Is the backend up?",
+        "operationId": "getApiHealth",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "const": true
+                    },
+                    "version": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "version"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/care/me": {
+      "get": {
+        "tags": [
+          "family"
+        ],
+        "summary": "Who is signed in, and which care groups do they belong to",
+        "operationId": "getApiCareMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "email"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "groups": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "personName": {
+                            "type": "string"
+                          },
+                          "role": {
+                            "type": "string",
+                            "enum": [
+                              "owner",
+                              "member"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "personName",
+                          "role"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "user",
+                    "groups"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "There is no signed-in session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/api/care/groups": {
+      "post": {
+        "tags": [
+          "family"
+        ],
+        "summary": "Create a care group for one person",
+        "description": "The caller becomes its owner. A care group is one person and their family; every record belongs to exactly one. It is created through Better Auth's organization plugin, so roles and membership are the library's.",
+        "operationId": "postApiCareGroups",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "personName": {
+                      "type": "string"
+                    },
+                    "address": {
+                      "type": "string"
+                    },
+                    "lang": {
+                      "type": "string",
+                      "description": "A registered language code, for example te (Telugu) or en (English)"
+                    },
+                    "consent": {
+                      "type": "object",
+                      "properties": {
+                        "missedDose": {
+                          "type": "boolean"
+                        },
+                        "emergency": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "missedDose",
+                        "emergency"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "medicines": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 80
+                          },
+                          "strength": {
+                            "type": "string",
+                            "maxLength": 20
+                          },
+                          "times": {
+                            "minItems": 1,
+                            "maxItems": 6,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "strength",
+                          "times"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "devices": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "number"
+                          },
+                          "lastSeenAt": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "createdAt",
+                          "lastSeenAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "owner",
+                        "member"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "personName",
+                    "address",
+                    "lang",
+                    "consent",
+                    "medicines",
+                    "devices",
+                    "role"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body is not valid JSON or does not match the schema (unknown fields are refused)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "There is no signed-in session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The request did not come from the app: the Origin header is not an allowed one",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "personName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60
+                  },
+                  "address": {
+                    "type": "string",
+                    "maxLength": 40
+                  },
+                  "lang": {
+                    "type": "string",
+                    "description": "A registered language code, for example te (Telugu) or en (English)"
+                  },
+                  "consent": {
+                    "type": "object",
+                    "properties": {
+                      "missedDose": {
+                        "type": "boolean"
+                      },
+                      "emergency": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "missedDose",
+                      "emergency"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "personName",
+                  "address",
+                  "lang",
+                  "consent"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "personName": "Amma",
+                "address": "అమ్మ",
+                "lang": "te",
+                "consent": {
+                  "missedDose": true,
+                  "emergency": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/care/groups/{id}": {
+      "get": {
+        "tags": [
+          "family"
+        ],
+        "summary": "One care group: person, language, consent, medicines, paired phones",
+        "operationId": "getApiCareGroupsId",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The care group id: from POST /api/care/groups or GET /api/care/me",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "personName": {
+                      "type": "string"
+                    },
+                    "address": {
+                      "type": "string"
+                    },
+                    "lang": {
+                      "type": "string",
+                      "description": "A registered language code, for example te (Telugu) or en (English)"
+                    },
+                    "consent": {
+                      "type": "object",
+                      "properties": {
+                        "missedDose": {
+                          "type": "boolean"
+                        },
+                        "emergency": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "missedDose",
+                        "emergency"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "medicines": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 80
+                          },
+                          "strength": {
+                            "type": "string",
+                            "maxLength": 20
+                          },
+                          "times": {
+                            "minItems": 1,
+                            "maxItems": 6,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "strength",
+                          "times"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "devices": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "number"
+                          },
+                          "lastSeenAt": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "createdAt",
+                          "lastSeenAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "owner",
+                        "member"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "personName",
+                    "address",
+                    "lang",
+                    "consent",
+                    "medicines",
+                    "devices",
+                    "role"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "There is no signed-in session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The group is not found, or it belongs to another family (the answer is the same, so ids reveal nothing)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "family"
+        ],
+        "summary": "Change the person, language or consent",
+        "description": "Any field may be left out. Phones are told with a `plan` event, so they pick up the change at once.",
+        "operationId": "patchApiCareGroupsId",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The care group id: from POST /api/care/groups or GET /api/care/me",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "personName": {
+                      "type": "string"
+                    },
+                    "address": {
+                      "type": "string"
+                    },
+                    "lang": {
+                      "type": "string",
+                      "description": "A registered language code, for example te (Telugu) or en (English)"
+                    },
+                    "consent": {
+                      "type": "object",
+                      "properties": {
+                        "missedDose": {
+                          "type": "boolean"
+                        },
+                        "emergency": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "missedDose",
+                        "emergency"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "medicines": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 80
+                          },
+                          "strength": {
+                            "type": "string",
+                            "maxLength": 20
+                          },
+                          "times": {
+                            "minItems": 1,
+                            "maxItems": 6,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "strength",
+                          "times"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "devices": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "number"
+                          },
+                          "lastSeenAt": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "createdAt",
+                          "lastSeenAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "owner",
+                        "member"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "personName",
+                    "address",
+                    "lang",
+                    "consent",
+                    "medicines",
+                    "devices",
+                    "role"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body is not valid JSON or does not match the schema (unknown fields are refused)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "There is no signed-in session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The request did not come from the app: the Origin header is not an allowed one",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The group is not found, or it belongs to another family (the answer is the same, so ids reveal nothing)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "personName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60
+                  },
+                  "address": {
+                    "type": "string",
+                    "maxLength": 40
+                  },
+                  "lang": {
+                    "type": "string",
+                    "description": "A registered language code, for example te (Telugu) or en (English)"
+                  },
+                  "consent": {
+                    "type": "object",
+                    "properties": {
+                      "missedDose": {
+                        "type": "boolean"
+                      },
+                      "emergency": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "missedDose",
+                      "emergency"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "additionalProperties": false
+              },
+              "example": {
+                "consent": {
+                  "missedDose": true,
+                  "emergency": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/care/groups/{id}/medicines": {
+      "post": {
+        "tags": [
+          "family"
+        ],
+        "summary": "Add (or update) a medicine",
+        "description": "Send the typed line the family writes (`Metformin 500, 1-0-1`: morning, noon, night; or `OD`, `BD`, `TDS`) or the fields. A line is read by the same parser the app uses and is refused with a plain message if it cannot be read. A medicine with the same name (ignoring case) is updated, and answers 200 instead of 201. Phones get a `plan` event.",
+        "operationId": "postApiCareGroupsIdMedicines",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The care group id: from POST /api/care/groups or GET /api/care/me",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 80
+                    },
+                    "strength": {
+                      "type": "string",
+                      "maxLength": 20
+                    },
+                    "times": {
+                      "minItems": 1,
+                      "maxItems": 6,
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "strength",
+                    "times"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The line cannot be read (code `invalid_medicine`, with the reason in `message`), or the body is invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "There is no signed-in session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The request did not come from the app: the Origin header is not an allowed one",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The group is not found, or it belongs to another family (the answer is the same, so ids reveal nothing)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "line": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 120
+                      }
+                    },
+                    "required": [
+                      "line"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 80
+                      },
+                      "strength": {
+                        "type": "string",
+                        "maxLength": 20
+                      },
+                      "times": {
+                        "minItems": 1,
+                        "maxItems": 6,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                        }
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "strength",
+                      "times"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "example": {
+                "line": "Metformin 500, 1-0-1"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/care/groups/{id}/medicines/{mid}": {
+      "delete": {
+        "tags": [
+          "family"
+        ],
+        "summary": "Remove a medicine",
+        "operationId": "deleteApiCareGroupsIdMedicinesMid",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The care group id: from POST /api/care/groups or GET /api/care/me",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mid",
+            "in": "path",
+            "required": true,
+            "description": "The medicine id",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "There is no signed-in session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The request did not come from the app: the Origin header is not an allowed one",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such medicine in this group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/api/care/groups/{id}/pairing-codes": {
+      "post": {
+        "tags": [
+          "family"
+        ],
+        "summary": "Make a one-time code to pair the person's phone",
+        "description": "Eight digits, valid 10 minutes, works once, one live code per group (a new code replaces an unused one). Only its hash is stored. The family member types it on the person's phone; the person never says or types it.",
+        "operationId": "postApiCareGroupsIdPairingcodes",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The care group id: from POST /api/care/groups or GET /api/care/me",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "pattern": "^\\d{8}$"
+                    },
+                    "expiresAt": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "expiresAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "There is no signed-in session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The request did not come from the app: the Origin header is not an allowed one",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The group is not found, or it belongs to another family (the answer is the same, so ids reveal nothing)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/api/care/groups/{id}/devices/{did}": {
+      "delete": {
+        "tags": [
+          "family"
+        ],
+        "summary": "Revoke a paired phone",
+        "description": "The phone is refused on its next request, and its live streams close at the next check.",
+        "operationId": "deleteApiCareGroupsIdDevicesDid",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The care group id: from POST /api/care/groups or GET /api/care/me",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "did",
+            "in": "path",
+            "required": true,
+            "description": "The device id, from the group's `devices` list",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "There is no signed-in session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The request did not come from the app: the Origin header is not an allowed one",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such phone, or it was already revoked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/api/care/groups/{id}/doses": {
+      "get": {
+        "tags": [
+          "family"
+        ],
+        "summary": "The dose log, newest first (at most 500)",
+        "operationId": "getApiCareGroupsIdDoses",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The care group id: from POST /api/care/groups or GET /api/care/me",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "Optional. Epoch milliseconds: only doses at or after this time",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "doses": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "slotId": {
+                            "type": "string",
+                            "minLength": 3,
+                            "maxLength": 120
+                          },
+                          "medicineId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "atMs": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "via": {
+                            "type": "string",
+                            "enum": [
+                              "voice",
+                              "button"
+                            ]
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "slotId",
+                          "medicineId",
+                          "atMs",
+                          "via",
+                          "id",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "doses"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "There is no signed-in session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The group is not found, or it belongs to another family (the answer is the same, so ids reveal nothing)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/api/care/groups/{id}/alerts": {
+      "get": {
+        "tags": [
+          "family"
+        ],
+        "summary": "The alerts, newest first (at most 200)",
+        "operationId": "getApiCareGroupsIdAlerts",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The care group id: from POST /api/care/groups or GET /api/care/me",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "alerts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "missed_dose",
+                              "double_dose",
+                              "emergency"
+                            ]
+                          },
+                          "slotId": {
+                            "type": "string"
+                          },
+                          "medicineId": {
+                            "type": "string"
+                          },
+                          "atMs": {
+                            "type": "number"
+                          },
+                          "acknowledgedAt": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "delivery": {
+                            "type": "object",
+                            "properties": {
+                              "inApp": {
+                                "type": "string",
+                                "enum": [
+                                  "delivered",
+                                  "failed"
+                                ]
+                              },
+                              "push": {
+                                "type": "string",
+                                "const": "not set up in this prototype"
+                              }
+                            },
+                            "required": [
+                              "inApp",
+                              "push"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "kind",
+                          "atMs",
+                          "acknowledgedAt",
+                          "delivery"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "alerts"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "There is no signed-in session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The group is not found, or it belongs to another family (the answer is the same, so ids reveal nothing)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/api/care/groups/{id}/alerts/{aid}/ack": {
+      "post": {
+        "tags": [
+          "family"
+        ],
+        "summary": "Acknowledge an alert",
+        "operationId": "postApiCareGroupsIdAlertsAidAck",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The care group id: from POST /api/care/groups or GET /api/care/me",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "aid",
+            "in": "path",
+            "required": true,
+            "description": "The alert id",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "missed_dose",
+                        "double_dose",
+                        "emergency"
+                      ]
+                    },
+                    "slotId": {
+                      "type": "string"
+                    },
+                    "medicineId": {
+                      "type": "string"
+                    },
+                    "atMs": {
+                      "type": "number"
+                    },
+                    "acknowledgedAt": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "delivery": {
+                      "type": "object",
+                      "properties": {
+                        "inApp": {
+                          "type": "string",
+                          "enum": [
+                            "delivered",
+                            "failed"
+                          ]
+                        },
+                        "push": {
+                          "type": "string",
+                          "const": "not set up in this prototype"
+                        }
+                      },
+                      "required": [
+                        "inApp",
+                        "push"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "kind",
+                    "atMs",
+                    "acknowledgedAt",
+                    "delivery"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "There is no signed-in session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The request did not come from the app: the Origin header is not an allowed one",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such alert in this group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/api/device/pair": {
+      "post": {
+        "tags": [
+          "phone"
+        ],
+        "summary": "Pair the person's phone with the family's code",
+        "description": "No other credential is needed: the code is the proof. The answer carries a long random device token, shown once; keep it on the phone and send it as `Authorization: Bearer <token>`. Only its hash is stored. A wrong, used or expired code all give the same 400, so a guess learns nothing. Limited to 10 tries a minute per address.",
+        "operationId": "postApiDevicePair",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deviceToken": {
+                      "type": "string",
+                      "minLength": 32
+                    },
+                    "groupId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "deviceToken",
+                    "groupId"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The code is wrong, used or expired (code `invalid_code`), or the body is invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "More than 10 tries a minute from this address",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "pattern": "^\\d{8}$"
+                  },
+                  "deviceName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40
+                  }
+                },
+                "required": [
+                  "code",
+                  "deviceName"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "code": "12345678",
+                "deviceName": "Amma phone"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/device/plan": {
+      "get": {
+        "tags": [
+          "phone"
+        ],
+        "summary": "What the phone needs to run the dose dialogue: person, language, consent, medicines",
+        "description": "Medicine ids are the server's; the phone uses them in slot ids (`medicineId|YYYY-MM-DD|HH:MM`).",
+        "operationId": "getApiDevicePlan",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "groupId": {
+                      "type": "string"
+                    },
+                    "person": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 60
+                        },
+                        "address": {
+                          "type": "string",
+                          "maxLength": 40
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "address"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "lang": {
+                      "type": "string",
+                      "description": "A registered language code, for example te (Telugu) or en (English)"
+                    },
+                    "consent": {
+                      "type": "object",
+                      "properties": {
+                        "missedDose": {
+                          "type": "boolean"
+                        },
+                        "emergency": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "missedDose",
+                        "emergency"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "medicines": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 80
+                          },
+                          "strength": {
+                            "type": "string",
+                            "maxLength": 20
+                          },
+                          "times": {
+                            "minItems": 1,
+                            "maxItems": 6,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "strength",
+                          "times"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "groupId",
+                    "person",
+                    "lang",
+                    "consent",
+                    "medicines"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The device token is missing, malformed, revoked or unknown",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "device": []
+          }
+        ]
+      }
+    },
+    "/api/device/doses": {
+      "post": {
+        "tags": [
+          "phone"
+        ],
+        "summary": "Record that a dose was taken",
+        "description": "Idempotent: one record per slot. The first call answers 201 and tells the family live; a retry answers 200 with the same record and changes nothing. The medicine must be on the phone's plan and the slot must belong to it.",
+        "operationId": "postApiDeviceDoses",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "slotId": {
+                      "type": "string",
+                      "minLength": 3,
+                      "maxLength": 120
+                    },
+                    "medicineId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "atMs": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "via": {
+                      "type": "string",
+                      "enum": [
+                        "voice",
+                        "button"
+                      ]
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "slotId",
+                    "medicineId",
+                    "atMs",
+                    "via",
+                    "id",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The medicine is not on this phone's plan (`unknown_medicine`), the slot does not belong to the medicine (`invalid_slot`), or the body is invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The device token is missing, malformed, revoked or unknown",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "device": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "slotId": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 120
+                  },
+                  "medicineId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "atMs": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "via": {
+                    "type": "string",
+                    "enum": [
+                      "voice",
+                      "button"
+                    ]
+                  }
+                },
+                "required": [
+                  "slotId",
+                  "medicineId",
+                  "atMs",
+                  "via"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "slotId": "MEDICINE_ID|2026-11-28|08:00",
+                "medicineId": "MEDICINE_ID",
+                "atMs": 1795800000000,
+                "via": "voice"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/device/alerts": {
+      "post": {
+        "tags": [
+          "phone"
+        ],
+        "summary": "Raise an alert for the family",
+        "description": "Kinds: `missed_dose`, `double_dose`, `emergency`. `missed_dose` and `emergency` are created only if the family consented; the answer says why not (`created: false`, `reason: no_consent`). A missed or repeated-dose alert is unique per slot (`reason: duplicate` on a retry); every emergency is recorded. Answers 201 when created, 200 otherwise.",
+        "operationId": "postApiDeviceAlerts",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "created": {
+                          "type": "boolean",
+                          "const": true
+                        },
+                        "alert": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "missed_dose",
+                                "double_dose",
+                                "emergency"
+                              ]
+                            },
+                            "slotId": {
+                              "type": "string"
+                            },
+                            "medicineId": {
+                              "type": "string"
+                            },
+                            "atMs": {
+                              "type": "number"
+                            },
+                            "acknowledgedAt": {
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            },
+                            "delivery": {
+                              "type": "object",
+                              "properties": {
+                                "inApp": {
+                                  "type": "string",
+                                  "enum": [
+                                    "delivered",
+                                    "failed"
+                                  ]
+                                },
+                                "push": {
+                                  "type": "string",
+                                  "const": "not set up in this prototype"
+                                }
+                              },
+                              "required": [
+                                "inApp",
+                                "push"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "kind",
+                            "atMs",
+                            "acknowledgedAt",
+                            "delivery"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "created",
+                        "alert"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "created": {
+                          "type": "boolean",
+                          "const": false
+                        },
+                        "reason": {
+                          "type": "string",
+                          "enum": [
+                            "no_consent",
+                            "duplicate"
+                          ]
+                        },
+                        "alert": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "missed_dose",
+                                "double_dose",
+                                "emergency"
+                              ]
+                            },
+                            "slotId": {
+                              "type": "string"
+                            },
+                            "medicineId": {
+                              "type": "string"
+                            },
+                            "atMs": {
+                              "type": "number"
+                            },
+                            "acknowledgedAt": {
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            },
+                            "delivery": {
+                              "type": "object",
+                              "properties": {
+                                "inApp": {
+                                  "type": "string",
+                                  "enum": [
+                                    "delivered",
+                                    "failed"
+                                  ]
+                                },
+                                "push": {
+                                  "type": "string",
+                                  "const": "not set up in this prototype"
+                                }
+                              },
+                              "required": [
+                                "inApp",
+                                "push"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "kind",
+                            "atMs",
+                            "acknowledgedAt",
+                            "delivery"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "created",
+                        "reason"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body is not valid JSON or does not match the schema (unknown fields are refused)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The device token is missing, malformed, revoked or unknown",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "device": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "missed_dose",
+                      "double_dose",
+                      "emergency"
+                    ]
+                  },
+                  "slotId": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "medicineId": {
+                    "type": "string"
+                  },
+                  "atMs": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "kind",
+                  "atMs"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "kind": "emergency",
+                "atMs": 1795800000000
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/care/groups/{id}/events": {
+      "get": {
+        "tags": [
+          "live"
+        ],
+        "summary": "Live events for the family: a server-sent-events stream",
+        "description": "Each frame is `data: {json}` followed by a blank line. Types: `dose`, `alert`, `plan`, `device`, `voice`, `ping` (every 15 seconds). The server sends a `ping` the moment the stream opens. The stream closes at the next check if the session or the membership ends. Some proxies hold streams back (a Cloudflare quick tunnel does): then use the poll endpoint, or the client in `@kaabil/contract`, which switches by itself.",
+        "operationId": "getApiCareGroupsIdEvents",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The care group id: from POST /api/care/groups or GET /api/care/me",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A stream of events (see `ServerEvent`)"
+              }
+            }
+          },
+          "401": {
+            "description": "There is no signed-in session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The group is not found, or it belongs to another family (the answer is the same, so ids reveal nothing)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/api/care/groups/{id}/poll": {
+      "get": {
+        "tags": [
+          "live"
+        ],
+        "summary": "The same events by long polling",
+        "description": "Ask what happened after event id `after`; the answer waits up to `wait` milliseconds for news. Without `after` the answer has no events and `last` is where to start. Keep the newest `last` and send it as `after` next time. The server keeps the last 100 events per group.",
+        "operationId": "getApiCareGroupsIdPoll",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The care group id: from POST /api/care/groups or GET /api/care/me",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "description": "The id of the last event seen. Leave out to get the starting point",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "wait",
+            "in": "query",
+            "required": false,
+            "description": "Milliseconds to wait for news, 0 to 10000. Default 0",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "event": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "const": "dose"
+                                  },
+                                  "dose": {
+                                    "type": "object",
+                                    "properties": {
+                                      "slotId": {
+                                        "type": "string",
+                                        "minLength": 3,
+                                        "maxLength": 120
+                                      },
+                                      "medicineId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "atMs": {
+                                        "type": "integer",
+                                        "exclusiveMinimum": 0,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "via": {
+                                        "type": "string",
+                                        "enum": [
+                                          "voice",
+                                          "button"
+                                        ]
+                                      },
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "createdAt": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "slotId",
+                                      "medicineId",
+                                      "atMs",
+                                      "via",
+                                      "id",
+                                      "createdAt"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "dose"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "const": "alert"
+                                  },
+                                  "alert": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "missed_dose",
+                                          "double_dose",
+                                          "emergency"
+                                        ]
+                                      },
+                                      "slotId": {
+                                        "type": "string"
+                                      },
+                                      "medicineId": {
+                                        "type": "string"
+                                      },
+                                      "atMs": {
+                                        "type": "number"
+                                      },
+                                      "acknowledgedAt": {
+                                        "type": [
+                                          "number",
+                                          "null"
+                                        ]
+                                      },
+                                      "delivery": {
+                                        "type": "object",
+                                        "properties": {
+                                          "inApp": {
+                                            "type": "string",
+                                            "enum": [
+                                              "delivered",
+                                              "failed"
+                                            ]
+                                          },
+                                          "push": {
+                                            "type": "string",
+                                            "const": "not set up in this prototype"
+                                          }
+                                        },
+                                        "required": [
+                                          "inApp",
+                                          "push"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "kind",
+                                      "atMs",
+                                      "acknowledgedAt",
+                                      "delivery"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "alert"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "const": "plan"
+                                  },
+                                  "at": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "at"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "const": "device"
+                                  },
+                                  "device": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "name": {
+                                            "type": "string"
+                                          },
+                                          "createdAt": {
+                                            "type": "number"
+                                          },
+                                          "lastSeenAt": {
+                                            "type": [
+                                              "number",
+                                              "null"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "name",
+                                          "createdAt",
+                                          "lastSeenAt"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "removedId": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "device"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "const": "remind"
+                                  },
+                                  "medicineId": {
+                                    "type": "string"
+                                  },
+                                  "at": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "at"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "const": "voice"
+                                  },
+                                  "at": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "at"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "const": "ping"
+                                  },
+                                  "at": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "at"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "event"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "last": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "events",
+                    "last"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "There is no signed-in session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The group is not found, or it belongs to another family (the answer is the same, so ids reveal nothing)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/api/device/events": {
+      "get": {
+        "tags": [
+          "live"
+        ],
+        "summary": "Live events for the person's phone: a server-sent-events stream",
+        "description": "Types: `plan` (the plan changed), `remind` (start a reminder now: from the developer console), `voice` (the family's recordings changed), `ping`. Send the device token in the `Authorization` header (so use `fetch`, not `EventSource`, which cannot set headers).",
+        "operationId": "getApiDeviceEvents",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A stream of events"
+              }
+            }
+          },
+          "401": {
+            "description": "The device token is missing, malformed, revoked or unknown",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "device": []
+          }
+        ]
+      }
+    },
+    "/api/device/poll": {
+      "get": {
+        "tags": [
+          "live"
+        ],
+        "summary": "The phone's events by long polling",
+        "description": "Same as the family poll, for the person's phone.",
+        "operationId": "getApiDevicePoll",
+        "parameters": [
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "description": "The id of the last event seen. Leave out to get the starting point",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "wait",
+            "in": "query",
+            "required": false,
+            "description": "Milliseconds to wait for news, 0 to 10000. Default 0",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "event": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "const": "dose"
+                                  },
+                                  "dose": {
+                                    "type": "object",
+                                    "properties": {
+                                      "slotId": {
+                                        "type": "string",
+                                        "minLength": 3,
+                                        "maxLength": 120
+                                      },
+                                      "medicineId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "atMs": {
+                                        "type": "integer",
+                                        "exclusiveMinimum": 0,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "via": {
+                                        "type": "string",
+                                        "enum": [
+                                          "voice",
+                                          "button"
+                                        ]
+                                      },
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "createdAt": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "slotId",
+                                      "medicineId",
+                                      "atMs",
+                                      "via",
+                                      "id",
+                                      "createdAt"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "dose"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "const": "alert"
+                                  },
+                                  "alert": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "missed_dose",
+                                          "double_dose",
+                                          "emergency"
+                                        ]
+                                      },
+                                      "slotId": {
+                                        "type": "string"
+                                      },
+                                      "medicineId": {
+                                        "type": "string"
+                                      },
+                                      "atMs": {
+                                        "type": "number"
+                                      },
+                                      "acknowledgedAt": {
+                                        "type": [
+                                          "number",
+                                          "null"
+                                        ]
+                                      },
+                                      "delivery": {
+                                        "type": "object",
+                                        "properties": {
+                                          "inApp": {
+                                            "type": "string",
+                                            "enum": [
+                                              "delivered",
+                                              "failed"
+                                            ]
+                                          },
+                                          "push": {
+                                            "type": "string",
+                                            "const": "not set up in this prototype"
+                                          }
+                                        },
+                                        "required": [
+                                          "inApp",
+                                          "push"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "kind",
+                                      "atMs",
+                                      "acknowledgedAt",
+                                      "delivery"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "alert"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "const": "plan"
+                                  },
+                                  "at": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "at"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "const": "device"
+                                  },
+                                  "device": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "name": {
+                                            "type": "string"
+                                          },
+                                          "createdAt": {
+                                            "type": "number"
+                                          },
+                                          "lastSeenAt": {
+                                            "type": [
+                                              "number",
+                                              "null"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "name",
+                                          "createdAt",
+                                          "lastSeenAt"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "removedId": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "device"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "const": "remind"
+                                  },
+                                  "medicineId": {
+                                    "type": "string"
+                                  },
+                                  "at": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "at"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "const": "voice"
+                                  },
+                                  "at": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "at"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "const": "ping"
+                                  },
+                                  "at": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "at"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "event"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "last": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "events",
+                    "last"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The device token is missing, malformed, revoked or unknown",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "device": []
+          }
+        ]
+      }
+    },
+    "/api/voice/status": {
+      "get": {
+        "tags": [
+          "voice"
+        ],
+        "summary": "Is cloud speech or voice available?",
+        "description": "Both say `key not set` until a provider key is configured on the server. No provider is wired yet: see `docs/api/voice.md`.",
+        "operationId": "getApiVoiceStatus",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "stt": {
+                      "type": "string",
+                      "enum": [
+                        "ready",
+                        "key not set"
+                      ]
+                    },
+                    "tts": {
+                      "type": "string",
+                      "enum": [
+                        "ready",
+                        "key not set"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "stt",
+                    "tts"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/care/groups/{id}/voice": {
+      "get": {
+        "tags": [
+          "voice"
+        ],
+        "summary": "The sentences Kaabil says to this person, and which have your recording",
+        "description": "Custom voice. Every fixed message, with the person's name and the medicines filled in, each with a `textHash` (its name for upload and delete) and `clip` (null when there is no recording).",
+        "operationId": "getApiCareGroupsIdVoice",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The care group id: from POST /api/care/groups or GET /api/care/me",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sentences": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string",
+                            "enum": [
+                              "remind",
+                              "confirm_log",
+                              "logged",
+                              "snooze",
+                              "already_logged",
+                              "not_logged",
+                              "clarify",
+                              "escalated",
+                              "emergency",
+                              "buttons",
+                              "help",
+                              "stopped"
+                            ]
+                          },
+                          "lang": {
+                            "type": "string",
+                            "description": "A registered language code, for example te (Telugu) or en (English)"
+                          },
+                          "text": {
+                            "type": "string"
+                          },
+                          "textHash": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f]{16}$"
+                          },
+                          "medicineName": {
+                            "type": "string"
+                          },
+                          "clip": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "contentType": {
+                                    "type": "string"
+                                  },
+                                  "size": {
+                                    "type": "number"
+                                  },
+                                  "createdAt": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "contentType",
+                                  "size",
+                                  "createdAt"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "lang",
+                          "text",
+                          "textHash",
+                          "clip"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "maxBytes": {
+                      "type": "number"
+                    },
+                    "maxSeconds": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "sentences",
+                    "maxBytes",
+                    "maxSeconds"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "There is no signed-in session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The group is not found, or it belongs to another family (the answer is the same, so ids reveal nothing)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "voice"
+        ],
+        "summary": "Delete all recordings of this group",
+        "operationId": "deleteApiCareGroupsIdVoice",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The care group id: from POST /api/care/groups or GET /api/care/me",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "There is no signed-in session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The request did not come from the app: the Origin header is not an allowed one",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The group is not found, or it belongs to another family (the answer is the same, so ids reveal nothing)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/api/care/groups/{id}/voice/{hash}": {
+      "put": {
+        "tags": [
+          "voice"
+        ],
+        "summary": "Save your recording of one sentence",
+        "description": "The body is the audio itself. Needs the header `x-voice-consent: yes`: the person recording agrees it is stored and played to the person. Accepted types: `audio/wav`, `audio/x-wav`, `audio/webm`, `audio/ogg`, `audio/mp4`, `audio/mpeg`, and the first bytes must match the type. 200 bytes to 1.5 MB. Only a sentence in the list above can be recorded. Replaces an earlier recording. In the browser, process it first (`processRecording` in `@kaabil/voice`: trim, even out, mono 16 kHz WAV).",
+        "operationId": "putApiCareGroupsIdVoiceHash",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The care group id: from POST /api/care/groups or GET /api/care/me",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "hash",
+            "in": "path",
+            "required": true,
+            "description": "The sentence's `textHash`",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-voice-consent",
+            "in": "header",
+            "required": true,
+            "description": "Send `yes`",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "content-type",
+            "in": "header",
+            "required": true,
+            "description": "Send `audio/wav`",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "No consent (`consent_required`), empty or too short (`too_short`), or not the audio it claims (`not_audio`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "There is no signed-in session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The request did not come from the app: the Origin header is not an allowed one",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Kaabil does not say that sentence to this person",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Over 1.5 MB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "An audio type that is not accepted (`unsupported_audio`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "audio/wav": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "voice"
+        ],
+        "summary": "Delete one recording",
+        "operationId": "deleteApiCareGroupsIdVoiceHash",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The care group id: from POST /api/care/groups or GET /api/care/me",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "hash",
+            "in": "path",
+            "required": true,
+            "description": "The sentence's `textHash`",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "There is no signed-in session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The request did not come from the app: the Origin header is not an allowed one",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such recording",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/api/care/groups/{id}/voice/{hash}/audio": {
+      "get": {
+        "tags": [
+          "voice"
+        ],
+        "summary": "Play back a saved recording (family)",
+        "operationId": "getApiCareGroupsIdVoiceHashAudio",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The care group id: from POST /api/care/groups or GET /api/care/me",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "hash",
+            "in": "path",
+            "required": true,
+            "description": "The sentence's `textHash`",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "audio/*": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "The audio, with its stored type and `nosniff`"
+              }
+            }
+          },
+          "401": {
+            "description": "There is no signed-in session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such recording",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/api/device/voice": {
+      "get": {
+        "tags": [
+          "voice"
+        ],
+        "summary": "The recordings the phone may play, with the sentence each one says",
+        "description": "Only recordings whose sentence Kaabil still says (a renamed medicine retires its old recording). The phone plays a recording only when it is about to say exactly that sentence.",
+        "operationId": "getApiDeviceVoice",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "clips": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "lang": {
+                            "type": "string",
+                            "description": "A registered language code, for example te (Telugu) or en (English)"
+                          },
+                          "text": {
+                            "type": "string"
+                          },
+                          "textHash": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f]{16}$"
+                          },
+                          "contentType": {
+                            "type": "string"
+                          },
+                          "size": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "lang",
+                          "text",
+                          "textHash",
+                          "contentType",
+                          "size"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "clips"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The device token is missing, malformed, revoked or unknown",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "device": []
+          }
+        ]
+      }
+    },
+    "/api/device/voice/{hash}/audio": {
+      "get": {
+        "tags": [
+          "voice"
+        ],
+        "summary": "Fetch a recording (phone)",
+        "operationId": "getApiDeviceVoiceHashAudio",
+        "parameters": [
+          {
+            "name": "hash",
+            "in": "path",
+            "required": true,
+            "description": "The recording's `textHash`, from the list above",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "audio/*": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "The audio, with its stored type and `nosniff`"
+              }
+            }
+          },
+          "401": {
+            "description": "The device token is missing, malformed, revoked or unknown",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such recording, or its sentence is no longer said",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "device": []
+          }
+        ]
+      }
+    },
+    "/api/dev/remind-now": {
+      "post": {
+        "tags": [
+          "dev"
+        ],
+        "summary": "Send a 'remind now' event to the group's phones",
+        "description": "Only present when the developer console is on (`KAABIL_DEV_CONSOLE=1`). For demos and tests: makes the paired phone start a reminder at once.",
+        "operationId": "postApiDevRemindnow",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body is not valid JSON or does not match the schema (unknown fields are refused)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "There is no signed-in session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The request did not come from the app: the Origin header is not an allowed one",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The group is not found, or it belongs to another family (the answer is the same, so ids reveal nothing)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "groupId": {
+                    "type": "string"
+                  },
+                  "medicineId": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "groupId"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "groupId": "GROUP_ID"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev": {
+      "get": {
+        "tags": [
+          "dev"
+        ],
+        "summary": "The plain test console (HTML)",
+        "description": "Only present when the developer console is on. A developer tool, not the product screens.",
+        "operationId": "getDev",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A single HTML page"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "securitySchemes": {
+      "session": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "better-auth.session_token",
+        "description": "The session cookie Better Auth sets on sign-in (the name gets a __Secure- prefix over HTTPS). Data-changing requests must also come from an allowed Origin."
+      },
+      "device": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "The device token the person's phone receives when it pairs."
+      }
+    }
+  }
+}
