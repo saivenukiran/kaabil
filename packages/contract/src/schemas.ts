@@ -9,7 +9,9 @@ import { isLangCode, MESSAGE_KEYS, type LangCode } from '@kaabil/core';
 
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 
-export const LangSchema = z.custom<LangCode>((v) => typeof v === 'string' && isLangCode(v), 'unknown language');
+export const LangSchema = z
+  .custom<LangCode>((v) => typeof v === 'string' && isLangCode(v), 'unknown language')
+  .meta({ type: 'string', description: 'A registered language code, for example te (Telugu) or en (English)' });
 export const TimeOfDaySchema = z.string().regex(HHMM, 'use HH:MM');
 export const ConsentSchema = z.object({ missedDose: z.boolean(), emergency: z.boolean() }).strict();
 export const MessageKeySchema = z.enum(MESSAGE_KEYS);
