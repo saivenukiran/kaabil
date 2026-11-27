@@ -8,6 +8,7 @@ import {
   AlertListSchema,
   AlertResultSchema,
   AlertSchema,
+  IceServersSchema,
   DoseListSchema,
   DeviceClipListSchema,
   DoseSchema,
@@ -23,6 +24,7 @@ import {
   VoiceOverviewSchema,
   VoiceStatusSchema,
   type AlertInput,
+  type CallSignal,
   type CreateGroup,
   type DoseInput,
   type MedicineInput,
@@ -144,6 +146,10 @@ export function createClient(options: ClientOptions = {}) {
         binary('PUT', `${g(id)}/voice/${encodeURIComponent(textHash)}`, { 'content-type': audio.type, ...(consent ? { 'x-voice-consent': 'yes' } : {}) }, audio).then(() => undefined),
       deleteClip: (id: string, textHash: string) => family('DELETE', `${g(id)}/voice/${encodeURIComponent(textHash)}`, Ok),
       deleteAllClips: (id: string) => family('DELETE', `${g(id)}/voice`, Ok),
+
+      /** Calls: send a signalling message to the person's phone, and ask which servers to use to connect. */
+      sendCallSignal: (id: string, signal: CallSignal) => family('POST', `${g(id)}/call`, Ok, signal),
+      iceServers: (id: string) => family('GET', `${g(id)}/ice`, IceServersSchema) as Promise<z.infer<typeof IceServersSchema>>,
       clipAudio: (id: string, textHash: string) => binary('GET', `${g(id)}/voice/${encodeURIComponent(textHash)}/audio`, {}).then((r) => r.blob()),
     },
 
@@ -162,6 +168,9 @@ export function createClient(options: ClientOptions = {}) {
       postAlert: (v: AlertInput) => device('POST', '/api/device/alerts', AlertResultSchema, v) as Promise<z.infer<typeof AlertResultSchema>>,
       events: (h: EventHandlers) => stream('/api/device/events', deviceHeaders(), h, '/api/device/poll'),
       /** The recordings the family made, to match against what this phone is about to say. */
+      /** Calls: send a signalling message to the family, and ask which servers to use to connect. */
+      sendCallSignal: (signal: CallSignal) => device('POST', '/api/device/call', Ok, signal),
+      iceServers: () => device('GET', '/api/device/ice', IceServersSchema) as Promise<z.infer<typeof IceServersSchema>>,
       voiceClips: () => device('GET', '/api/device/voice', DeviceClipListSchema) as Promise<z.infer<typeof DeviceClipListSchema>>,
       clipAudio: async (textHash: string) => (await binary('GET', `/api/device/voice/${encodeURIComponent(textHash)}/audio`, deviceHeaders())).blob(),
     },

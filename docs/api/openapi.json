@@ -2564,6 +2564,276 @@
                                 "properties": {
                                   "type": {
                                     "type": "string",
+                                    "const": "call"
+                                  },
+                                  "signal": {
+                                    "oneOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "ring"
+                                          },
+                                          "callId": {
+                                            "type": "string",
+                                            "pattern": "^[A-Za-z0-9-]{8,64}$"
+                                          },
+                                          "from": {
+                                            "type": "string",
+                                            "enum": [
+                                              "person",
+                                              "family"
+                                            ]
+                                          },
+                                          "withVideo": {
+                                            "type": "boolean"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "callId",
+                                          "from",
+                                          "withVideo"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "accept"
+                                          },
+                                          "callId": {
+                                            "type": "string",
+                                            "pattern": "^[A-Za-z0-9-]{8,64}$"
+                                          },
+                                          "from": {
+                                            "type": "string",
+                                            "enum": [
+                                              "person",
+                                              "family"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "callId",
+                                          "from"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "decline"
+                                          },
+                                          "callId": {
+                                            "type": "string",
+                                            "pattern": "^[A-Za-z0-9-]{8,64}$"
+                                          },
+                                          "from": {
+                                            "type": "string",
+                                            "enum": [
+                                              "person",
+                                              "family"
+                                            ]
+                                          },
+                                          "reason": {
+                                            "type": "string",
+                                            "enum": [
+                                              "declined",
+                                              "busy"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "callId",
+                                          "from",
+                                          "reason"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "offer"
+                                          },
+                                          "callId": {
+                                            "type": "string",
+                                            "pattern": "^[A-Za-z0-9-]{8,64}$"
+                                          },
+                                          "from": {
+                                            "type": "string",
+                                            "enum": [
+                                              "person",
+                                              "family"
+                                            ]
+                                          },
+                                          "sdp": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 20000
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "callId",
+                                          "from",
+                                          "sdp"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "answer"
+                                          },
+                                          "callId": {
+                                            "type": "string",
+                                            "pattern": "^[A-Za-z0-9-]{8,64}$"
+                                          },
+                                          "from": {
+                                            "type": "string",
+                                            "enum": [
+                                              "person",
+                                              "family"
+                                            ]
+                                          },
+                                          "sdp": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 20000
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "callId",
+                                          "from",
+                                          "sdp"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "ice"
+                                          },
+                                          "callId": {
+                                            "type": "string",
+                                            "pattern": "^[A-Za-z0-9-]{8,64}$"
+                                          },
+                                          "from": {
+                                            "type": "string",
+                                            "enum": [
+                                              "person",
+                                              "family"
+                                            ]
+                                          },
+                                          "candidate": {
+                                            "anyOf": [
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "candidate": {
+                                                    "type": "string",
+                                                    "maxLength": 2000
+                                                  },
+                                                  "sdpMid": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "string",
+                                                        "maxLength": 64
+                                                      },
+                                                      {
+                                                        "type": "null"
+                                                      }
+                                                    ]
+                                                  },
+                                                  "sdpMLineIndex": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "integer",
+                                                        "minimum": 0,
+                                                        "maximum": 63
+                                                      },
+                                                      {
+                                                        "type": "null"
+                                                      }
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "candidate",
+                                                  "sdpMid",
+                                                  "sdpMLineIndex"
+                                                ],
+                                                "additionalProperties": false
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "callId",
+                                          "from",
+                                          "candidate"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "hangup"
+                                          },
+                                          "callId": {
+                                            "type": "string",
+                                            "pattern": "^[A-Za-z0-9-]{8,64}$"
+                                          },
+                                          "from": {
+                                            "type": "string",
+                                            "enum": [
+                                              "person",
+                                              "family"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "callId",
+                                          "from"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "signal"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
                                     "const": "ping"
                                   },
                                   "at": {
@@ -2947,6 +3217,276 @@
                                 "required": [
                                   "type",
                                   "at"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "const": "call"
+                                  },
+                                  "signal": {
+                                    "oneOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "ring"
+                                          },
+                                          "callId": {
+                                            "type": "string",
+                                            "pattern": "^[A-Za-z0-9-]{8,64}$"
+                                          },
+                                          "from": {
+                                            "type": "string",
+                                            "enum": [
+                                              "person",
+                                              "family"
+                                            ]
+                                          },
+                                          "withVideo": {
+                                            "type": "boolean"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "callId",
+                                          "from",
+                                          "withVideo"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "accept"
+                                          },
+                                          "callId": {
+                                            "type": "string",
+                                            "pattern": "^[A-Za-z0-9-]{8,64}$"
+                                          },
+                                          "from": {
+                                            "type": "string",
+                                            "enum": [
+                                              "person",
+                                              "family"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "callId",
+                                          "from"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "decline"
+                                          },
+                                          "callId": {
+                                            "type": "string",
+                                            "pattern": "^[A-Za-z0-9-]{8,64}$"
+                                          },
+                                          "from": {
+                                            "type": "string",
+                                            "enum": [
+                                              "person",
+                                              "family"
+                                            ]
+                                          },
+                                          "reason": {
+                                            "type": "string",
+                                            "enum": [
+                                              "declined",
+                                              "busy"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "callId",
+                                          "from",
+                                          "reason"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "offer"
+                                          },
+                                          "callId": {
+                                            "type": "string",
+                                            "pattern": "^[A-Za-z0-9-]{8,64}$"
+                                          },
+                                          "from": {
+                                            "type": "string",
+                                            "enum": [
+                                              "person",
+                                              "family"
+                                            ]
+                                          },
+                                          "sdp": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 20000
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "callId",
+                                          "from",
+                                          "sdp"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "answer"
+                                          },
+                                          "callId": {
+                                            "type": "string",
+                                            "pattern": "^[A-Za-z0-9-]{8,64}$"
+                                          },
+                                          "from": {
+                                            "type": "string",
+                                            "enum": [
+                                              "person",
+                                              "family"
+                                            ]
+                                          },
+                                          "sdp": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 20000
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "callId",
+                                          "from",
+                                          "sdp"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "ice"
+                                          },
+                                          "callId": {
+                                            "type": "string",
+                                            "pattern": "^[A-Za-z0-9-]{8,64}$"
+                                          },
+                                          "from": {
+                                            "type": "string",
+                                            "enum": [
+                                              "person",
+                                              "family"
+                                            ]
+                                          },
+                                          "candidate": {
+                                            "anyOf": [
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "candidate": {
+                                                    "type": "string",
+                                                    "maxLength": 2000
+                                                  },
+                                                  "sdpMid": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "string",
+                                                        "maxLength": 64
+                                                      },
+                                                      {
+                                                        "type": "null"
+                                                      }
+                                                    ]
+                                                  },
+                                                  "sdpMLineIndex": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "integer",
+                                                        "minimum": 0,
+                                                        "maximum": 63
+                                                      },
+                                                      {
+                                                        "type": "null"
+                                                      }
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "candidate",
+                                                  "sdpMid",
+                                                  "sdpMLineIndex"
+                                                ],
+                                                "additionalProperties": false
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "callId",
+                                          "from",
+                                          "candidate"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "hangup"
+                                          },
+                                          "callId": {
+                                            "type": "string",
+                                            "pattern": "^[A-Za-z0-9-]{8,64}$"
+                                          },
+                                          "from": {
+                                            "type": "string",
+                                            "enum": [
+                                              "person",
+                                              "family"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "callId",
+                                          "from"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "signal"
                                 ],
                                 "additionalProperties": false
                               },
@@ -3674,6 +4214,886 @@
           },
           "404": {
             "description": "No such recording, or its sentence is no longer said",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "device": []
+          }
+        ]
+      }
+    },
+    "/api/care/groups/{id}/call": {
+      "post": {
+        "tags": [
+          "calls"
+        ],
+        "summary": "Send a call message to the person's phone",
+        "description": "Voice and video calls go directly between the two phones (WebRTC); this server only carries the setup messages. The body is one signal: `ring`, `accept`, `decline`, `offer`, `answer`, `ice` or `hangup`, with a `callId` (8 to 64 letters, digits or dashes, the same for the whole call) and `from` (it must match who is sending). The other side receives it as a live `call` event. Limits: 300 messages a minute and 6 `ring`s in 5 minutes for each care group.",
+        "operationId": "postApiCareGroupsIdCall",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The care group id: from POST /api/care/groups or GET /api/care/me",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`from` is not `family` (`wrong_sender`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "There is no signed-in session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The request did not come from the app: the Origin header is not an allowed one",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The group is not found, or it belongs to another family (the answer is the same, so ids reveal nothing)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A `ring` when no phone is paired (`no_phone`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many messages (`rate_limited`) or too many calls (`too_many_calls`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "ring"
+                      },
+                      "callId": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9-]{8,64}$"
+                      },
+                      "from": {
+                        "type": "string",
+                        "enum": [
+                          "person",
+                          "family"
+                        ]
+                      },
+                      "withVideo": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "callId",
+                      "from",
+                      "withVideo"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "accept"
+                      },
+                      "callId": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9-]{8,64}$"
+                      },
+                      "from": {
+                        "type": "string",
+                        "enum": [
+                          "person",
+                          "family"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "callId",
+                      "from"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "decline"
+                      },
+                      "callId": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9-]{8,64}$"
+                      },
+                      "from": {
+                        "type": "string",
+                        "enum": [
+                          "person",
+                          "family"
+                        ]
+                      },
+                      "reason": {
+                        "type": "string",
+                        "enum": [
+                          "declined",
+                          "busy"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "callId",
+                      "from",
+                      "reason"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "offer"
+                      },
+                      "callId": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9-]{8,64}$"
+                      },
+                      "from": {
+                        "type": "string",
+                        "enum": [
+                          "person",
+                          "family"
+                        ]
+                      },
+                      "sdp": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 20000
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "callId",
+                      "from",
+                      "sdp"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "answer"
+                      },
+                      "callId": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9-]{8,64}$"
+                      },
+                      "from": {
+                        "type": "string",
+                        "enum": [
+                          "person",
+                          "family"
+                        ]
+                      },
+                      "sdp": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 20000
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "callId",
+                      "from",
+                      "sdp"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "ice"
+                      },
+                      "callId": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9-]{8,64}$"
+                      },
+                      "from": {
+                        "type": "string",
+                        "enum": [
+                          "person",
+                          "family"
+                        ]
+                      },
+                      "candidate": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "candidate": {
+                                "type": "string",
+                                "maxLength": 2000
+                              },
+                              "sdpMid": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 64
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "sdpMLineIndex": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 63
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "candidate",
+                              "sdpMid",
+                              "sdpMLineIndex"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "callId",
+                      "from",
+                      "candidate"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "hangup"
+                      },
+                      "callId": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9-]{8,64}$"
+                      },
+                      "from": {
+                        "type": "string",
+                        "enum": [
+                          "person",
+                          "family"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "callId",
+                      "from"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "example": {
+                "kind": "ring",
+                "callId": "call-4f7a9c21",
+                "from": "family",
+                "withVideo": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/device/call": {
+      "post": {
+        "tags": [
+          "calls"
+        ],
+        "summary": "Send a call message to the family",
+        "description": "Voice and video calls go directly between the two phones (WebRTC); this server only carries the setup messages. The body is one signal: `ring`, `accept`, `decline`, `offer`, `answer`, `ice` or `hangup`, with a `callId` (8 to 64 letters, digits or dashes, the same for the whole call) and `from` (it must match who is sending). The other side receives it as a live `call` event. Limits: 300 messages a minute and 6 `ring`s in 5 minutes for each care group.",
+        "operationId": "postApiDeviceCall",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`from` is not `person` (`wrong_sender`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The device token is missing, malformed, revoked or unknown",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many messages (`rate_limited`) or too many calls (`too_many_calls`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "device": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "ring"
+                      },
+                      "callId": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9-]{8,64}$"
+                      },
+                      "from": {
+                        "type": "string",
+                        "enum": [
+                          "person",
+                          "family"
+                        ]
+                      },
+                      "withVideo": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "callId",
+                      "from",
+                      "withVideo"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "accept"
+                      },
+                      "callId": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9-]{8,64}$"
+                      },
+                      "from": {
+                        "type": "string",
+                        "enum": [
+                          "person",
+                          "family"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "callId",
+                      "from"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "decline"
+                      },
+                      "callId": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9-]{8,64}$"
+                      },
+                      "from": {
+                        "type": "string",
+                        "enum": [
+                          "person",
+                          "family"
+                        ]
+                      },
+                      "reason": {
+                        "type": "string",
+                        "enum": [
+                          "declined",
+                          "busy"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "callId",
+                      "from",
+                      "reason"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "offer"
+                      },
+                      "callId": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9-]{8,64}$"
+                      },
+                      "from": {
+                        "type": "string",
+                        "enum": [
+                          "person",
+                          "family"
+                        ]
+                      },
+                      "sdp": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 20000
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "callId",
+                      "from",
+                      "sdp"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "answer"
+                      },
+                      "callId": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9-]{8,64}$"
+                      },
+                      "from": {
+                        "type": "string",
+                        "enum": [
+                          "person",
+                          "family"
+                        ]
+                      },
+                      "sdp": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 20000
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "callId",
+                      "from",
+                      "sdp"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "ice"
+                      },
+                      "callId": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9-]{8,64}$"
+                      },
+                      "from": {
+                        "type": "string",
+                        "enum": [
+                          "person",
+                          "family"
+                        ]
+                      },
+                      "candidate": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "candidate": {
+                                "type": "string",
+                                "maxLength": 2000
+                              },
+                              "sdpMid": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 64
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "sdpMLineIndex": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 63
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "candidate",
+                              "sdpMid",
+                              "sdpMLineIndex"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "callId",
+                      "from",
+                      "candidate"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "hangup"
+                      },
+                      "callId": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9-]{8,64}$"
+                      },
+                      "from": {
+                        "type": "string",
+                        "enum": [
+                          "person",
+                          "family"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "callId",
+                      "from"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "example": {
+                "kind": "ring",
+                "callId": "call-8b21d3e0",
+                "from": "person",
+                "withVideo": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/care/groups/{id}/ice": {
+      "get": {
+        "tags": [
+          "calls"
+        ],
+        "summary": "Which servers to use to connect a call (family)",
+        "description": "Pass the answer as `iceServers` to `RTCPeerConnection`. Always a public STUN server. When a Cloudflare Realtime TURN key is configured (`CF_TURN_KEY_ID`, `CF_TURN_API_TOKEN`), short-lived relay credentials are added so a call still connects when a network blocks the direct path. If the relay cannot be reached the answer is STUN only. Never cached.",
+        "operationId": "getApiCareGroupsIdIce",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The care group id: from POST /api/care/groups or GET /api/care/me",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "iceServers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "urls": {
+                            "minItems": 1,
+                            "maxItems": 12,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "maxLength": 200
+                            }
+                          },
+                          "username": {
+                            "type": "string",
+                            "maxLength": 500
+                          },
+                          "credential": {
+                            "type": "string",
+                            "maxLength": 500
+                          }
+                        },
+                        "required": [
+                          "urls"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "iceServers"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "There is no signed-in session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The group is not found, or it belongs to another family (the answer is the same, so ids reveal nothing)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/api/device/ice": {
+      "get": {
+        "tags": [
+          "calls"
+        ],
+        "summary": "Which servers to use to connect a call (phone)",
+        "description": "The same answer as the family's. Pass it as `iceServers` to `RTCPeerConnection`.",
+        "operationId": "getApiDeviceIce",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "iceServers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "urls": {
+                            "minItems": 1,
+                            "maxItems": 12,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "maxLength": 200
+                            }
+                          },
+                          "username": {
+                            "type": "string",
+                            "maxLength": 500
+                          },
+                          "credential": {
+                            "type": "string",
+                            "maxLength": 500
+                          }
+                        },
+                        "required": [
+                          "urls"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "iceServers"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The device token is missing, malformed, revoked or unknown",
             "content": {
               "application/json": {
                 "schema": {

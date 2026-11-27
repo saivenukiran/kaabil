@@ -7,6 +7,7 @@
 import { advance, dismiss112, hear, press, sos, type AppState } from '@kaabil/core';
 import { ApiError, applyPlan, newSent, planToState, remindNow, unsent, type Client, type Plan } from '@kaabil/contract';
 import { ClipSpeechPort, createVoiceLoop, WebSpeechPort, type VoiceLoop, type VoiceStatus } from '@kaabil/voice';
+import { mountCall } from './call';
 import { button, el, errorText, field, section, status } from './dom';
 
 const TOKEN_KEY = 'kaabil.testpage.device';
@@ -38,6 +39,19 @@ export function mountPerson(root: HTMLElement, client: Client, log: (m: string) 
   let voiceStatus: VoiceStatus = 'idle';
   let notice: string | null = null;
   const clipUrls = new Map<string, string>();
+
+  // ---- calls: ring the family, and answer when they ring
+  const call = mountCall({
+    id: 'dev-call',
+    role: 'person',
+    who: 'your family',
+    send: async (s) => {
+      await client.device.sendCallSignal(s);
+    },
+    iceServers: async () => (await client.device.iceServers()).iceServers,
+    log,
+  });
+  call.setCanDial(false);
 
   const web = new WebSpeechPort();
   const port = new ClipSpeechPort(web);
@@ -193,6 +207,8 @@ export function mountPerson(root: HTMLElement, client: Client, log: (m: string) 
 
   // ---- connecting
   function teardown() {
+    call.end();
+    call.setCanDial(false);
     stopEvents?.();
     stopEvents = null;
     loop?.stop();
@@ -237,12 +253,14 @@ export function mountPerson(root: HTMLElement, client: Client, log: (m: string) 
             if (r) update(() => advance(r.state, 0));
           }
           if (e.type === 'voice') void loadClips();
+          if (e.type === 'call') call.handle(e.signal);
         },
         onStatus: (s) => {
           if (s === 'closed' && state) pairStatus.set('The server stopped this phone. Ask the family for a new code.', false);
         },
       });
       timer = setInterval(tick, 1000);
+      call.setCanDial(true);
       await loadClips();
       render();
     } catch (e) {
@@ -275,7 +293,7 @@ export function mountPerson(root: HTMLElement, client: Client, log: (m: string) 
     }
   }
 
-  const api = { setCode: (c: string) => { code.input.value = c; } };
+  const api = { setCode: (c: string) => { code.input.value = c; }, call };
 
   root.append(
     el('h2', {}, "Person's phone"),
@@ -292,7 +310,8 @@ export function mountPerson(root: HTMLElement, client: Client, log: (m: string) 
       send,
       el('div', { class: 'row' }, sosBtn, call112, dismiss),
     ),
-    section('3. Demo controls', el('div', { class: 'row' }, remindLocal, adv), syncNote, clipNote, playedNote),
+    section('3. Call the family', call.node),
+    section('4. Demo controls', el('div', { class: 'row' }, remindLocal, adv), syncNote, clipNote, playedNote),
   );
   render();
   void connect();

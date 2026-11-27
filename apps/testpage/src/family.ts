@@ -1,6 +1,7 @@
 /** The family member's phone: account, care group, medicines, pairing, live doses and alerts, and recording their own voice. */
 import { processRecording, type RecordingResult } from '@kaabil/voice';
 import type { AlertDto, Client, DoseDto, GroupDto, VoiceOverview } from '@kaabil/contract';
+import { mountCall } from './call';
 import { button, clear, el, errorText, field, hhmm, section, select, status } from './dom';
 import { startRecording, type Recording } from './record';
 
@@ -18,6 +19,20 @@ export function mountFamily(root: HTMLElement, client: Client, log: (m: string) 
   let stopEvents: (() => void) | null = null;
   let recording: { hash: string; rec: Recording } | null = null;
 
+  // ---- calls: ring the person's phone, and answer when they ring
+  const call = mountCall({
+    id: 'fam-call',
+    role: 'family',
+    who: 'the person',
+    send: async (s) => {
+      if (!groupId) throw new Error('Create or select a care group first');
+      await client.family.sendCallSignal(groupId, s);
+    },
+    iceServers: async () => (groupId ? (await client.family.iceServers(groupId)).iceServers : []),
+    log,
+  });
+  call.setCanDial(false);
+
   // ---- account
   const acct = status('fam-status');
   const name = field('fam-name', 'Name', 'Ravi');
@@ -28,6 +43,8 @@ export function mountFamily(root: HTMLElement, client: Client, log: (m: string) 
   function forgetAccount() {
     stopEvents?.();
     stopEvents = null;
+    call.end();
+    call.setCanDial(false);
     groupId = null;
     group = null;
     voice = null;
@@ -83,6 +100,7 @@ export function mountFamily(root: HTMLElement, client: Client, log: (m: string) 
 
   async function selectGroup(id: string) {
     groupId = id;
+    call.setCanDial(true);
     stopEvents?.();
     stopEvents = client.family.events(id, {
       onEvent: (e) => {
@@ -90,6 +108,7 @@ export function mountFamily(root: HTMLElement, client: Client, log: (m: string) 
         if (e.type === 'dose' || e.type === 'alert') void refreshLists();
         if (e.type === 'plan' || e.type === 'device') void refreshGroup();
         if (e.type === 'voice') void refreshVoice();
+        if (e.type === 'call') call.handle(e.signal);
       },
     });
     await refreshGroup();
@@ -361,9 +380,10 @@ export function mountFamily(root: HTMLElement, client: Client, log: (m: string) 
     ),
     section('3. Medicines', line.wrap, el('div', { class: 'row' }, addLine, addSoon, remind), medStatus.node, meds),
     section('4. Pair the person\'s phone', makeCode, codeBox, codeNote.node, devices),
-    section('5. What happened (live)', el('h4', {}, 'Doses'), doses, el('h4', {}, 'Alerts'), alertList),
+    section('5. Call the person', el('p', { class: 'note' }, "Rings the person's phone. They must tap Answer: a call is never answered by itself."), call.node),
+    section('6. What happened (live)', el('h4', {}, 'Doses'), doses, el('h4', {}, 'Alerts'), alertList),
     section(
-      '6. My own voice',
+      '7. My own voice',
       el('p', { class: 'note' }, "Record yourself reading Kaabil's sentences. The person's phone will play your voice instead of the synthetic voice, only for these exact sentences. Recordings are trimmed and evened out in your browser first."),
       el('label', {}, consent, 'I agree my recording is stored and played to the person. I can delete it at any time.'),
       sentences,
@@ -373,4 +393,5 @@ export function mountFamily(root: HTMLElement, client: Client, log: (m: string) 
   );
   renderAll();
   void refreshMe();
+  return { call };
 }

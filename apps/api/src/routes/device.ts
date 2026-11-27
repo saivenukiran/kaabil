@@ -6,12 +6,14 @@
 import { and, eq, isNull } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
-import { AlertInputSchema, DoseInputSchema, PairRequestSchema } from '@kaabil/contract';
+import { AlertInputSchema, CallSignalSchema, DoseInputSchema, PairRequestSchema } from '@kaabil/contract';
 import { schema } from '@kaabil/db';
 import { createAlert } from '../alertsService';
 import { HttpError, parseBody, unauthorized } from '../http';
 import { deviceDto, doseDto, listMedicines, planFor } from '../repo';
+import { getIceServers } from '../iceServers';
 import { pollAnswer } from './poll';
+import { relaySignal } from './calls';
 import { bearer, newDeviceToken, newId, RateLimiter, sha256 } from '../security';
 import { deviceClips, getClipAudio } from '../voiceClips';
 import type { Deps } from '../types';
@@ -122,6 +124,17 @@ export function deviceRoutes(d: Deps) {
   app.get('/poll', async (c) => {
     c.header('Cache-Control', 'no-store');
     return c.json(await pollAnswer(d, c.get('device').groupId, 'device', c.req.query(), c.req.raw.signal));
+  });
+
+  // Calls: pass the setup messages to the family, and say which servers to use.
+  app.post('/call', async (c) => {
+    await relaySignal(d, c.get('device').groupId, 'person', await parseBody(c, CallSignalSchema));
+    return c.json({ ok: true });
+  });
+
+  app.get('/ice', async (c) => {
+    c.header('Cache-Control', 'no-store');
+    return c.json(await getIceServers(d));
   });
 
   // The family's recordings: the phone lists them (with the sentence each one says) and fetches the audio.

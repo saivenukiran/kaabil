@@ -36,6 +36,10 @@ Start with the [guide](README.md) for conventions (errors, sign-in, live events)
 | DELETE | `/api/care/groups/:id/voice` | session | Delete all recordings of this group |
 | GET | `/api/device/voice` | device | The recordings the phone may play, with the sentence each one says |
 | GET | `/api/device/voice/:hash/audio` | device | Fetch a recording (phone) |
+| POST | `/api/care/groups/:id/call` | session | Send a call message to the person's phone |
+| POST | `/api/device/call` | device | Send a call message to the family |
+| GET | `/api/care/groups/:id/ice` | session | Which servers to use to connect a call (family) |
+| GET | `/api/device/ice` | device | Which servers to use to connect a call (phone) |
 | POST | `/api/dev/remind-now` | dev | Send a 'remind now' event to the group's phones |
 | GET | `/dev` | none | The plain test console (HTML) |
 
@@ -951,7 +955,7 @@ Success: **200**
 |---|---|---|---|
 | `events` | array of object | yes |  |
 | `events[].id` | integer | yes | at least 0 |
-| `events[].event` | one of the events `dose`, `alert`, `plan`, `device`, `remind`, `voice`, `ping` | yes |  |
+| `events[].event` | one of the events `dose`, `alert`, `plan`, `device`, `remind`, `voice`, `call`, `ping` | yes |  |
 | `last` | integer | yes | at least 0 |
 
 Errors
@@ -1024,7 +1028,7 @@ Success: **200**
 |---|---|---|---|
 | `events` | array of object | yes |  |
 | `events[].id` | integer | yes | at least 0 |
-| `events[].event` | one of the events `dose`, `alert`, `plan`, `device`, `remind`, `voice`, `ping` | yes |  |
+| `events[].event` | one of the events `dose`, `alert`, `plan`, `device`, `remind`, `voice`, `call`, `ping` | yes |  |
 | `last` | integer | yes | at least 0 |
 
 Errors
@@ -1360,6 +1364,262 @@ With the typed client (`@kaabil/contract`)
 
 ```ts
 client.device.clipAudio(textHash)
+```
+
+## Calls
+
+### `POST /api/care/groups/:id/call`
+
+**Send a call message to the person's phone**
+
+Who may call it: a signed-in family member (session cookie).
+
+Voice and video calls go directly between the two phones (WebRTC); this server only carries the setup messages. The body is one signal: `ring`, `accept`, `decline`, `offer`, `answer`, `ice` or `hangup`, with a `callId` (8 to 64 letters, digits or dashes, the same for the whole call) and `from` (it must match who is sending). The other side receives it as a live `call` event. Limits: 300 messages a minute and 6 `ring`s in 5 minutes for each care group.
+
+Path parameters
+
+| Name | Meaning |
+|---|---|
+| `id` | The care group id: from POST /api/care/groups or GET /api/care/me |
+
+Request body
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `option 1` | object | no | send exactly one of the options |
+| `kind` | "ring" | yes |  |
+| `callId` | string | yes | matches `^[A-Za-z0-9-]{8,64}$` |
+| `from` | one of "person", "family" | yes |  |
+| `withVideo` | boolean | yes |  |
+| `option 2` | object | no | send exactly one of the options |
+| `kind` | "accept" | yes |  |
+| `callId` | string | yes | matches `^[A-Za-z0-9-]{8,64}$` |
+| `from` | one of "person", "family" | yes |  |
+| `option 3` | object | no | send exactly one of the options |
+| `kind` | "decline" | yes |  |
+| `callId` | string | yes | matches `^[A-Za-z0-9-]{8,64}$` |
+| `from` | one of "person", "family" | yes |  |
+| `reason` | one of "declined", "busy" | yes |  |
+| `option 4` | object | no | send exactly one of the options |
+| `kind` | "offer" | yes |  |
+| `callId` | string | yes | matches `^[A-Za-z0-9-]{8,64}$` |
+| `from` | one of "person", "family" | yes |  |
+| `sdp` | string | yes | 1 to 20000 characters |
+| `option 5` | object | no | send exactly one of the options |
+| `kind` | "answer" | yes |  |
+| `callId` | string | yes | matches `^[A-Za-z0-9-]{8,64}$` |
+| `from` | one of "person", "family" | yes |  |
+| `sdp` | string | yes | 1 to 20000 characters |
+| `option 6` | object | no | send exactly one of the options |
+| `kind` | "ice" | yes |  |
+| `callId` | string | yes | matches `^[A-Za-z0-9-]{8,64}$` |
+| `from` | one of "person", "family" | yes |  |
+| `candidate` | object or null | yes |  |
+| `option 7` | object | no | send exactly one of the options |
+| `kind` | "hangup" | yes |  |
+| `callId` | string | yes | matches `^[A-Za-z0-9-]{8,64}$` |
+| `from` | one of "person", "family" | yes |  |
+
+Example
+
+```json
+{
+  "kind": "ring",
+  "callId": "call-4f7a9c21",
+  "from": "family",
+  "withVideo": false
+}
+```
+
+Success: **200**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `ok` | true | yes |  |
+
+Errors
+
+| Status | When |
+|---|---|
+| 401 | There is no signed-in session |
+| 404 | The group is not found, or it belongs to another family (the answer is the same, so ids reveal nothing) |
+| 400 | The body is not valid JSON or does not match the schema (unknown fields are refused) |
+| 400 | `from` is not `family` (`wrong_sender`) |
+| 409 | A `ring` when no phone is paired (`no_phone`) |
+| 429 | Too many messages (`rate_limited`) or too many calls (`too_many_calls`) |
+| 403 | The request did not come from the app: the Origin header is not an allowed one |
+
+With curl
+
+```bash
+curl -s -X POST -b cookies.txt -H "Origin: $BASE" -H "Content-Type: application/json" -d '{"kind":"ring","callId":"call-4f7a9c21","from":"family","withVideo":false}' "$BASE/api/care/groups/$GROUP_ID/call"
+```
+
+With the typed client (`@kaabil/contract`)
+
+```ts
+client.family.sendCallSignal(groupId, { kind: 'ring', callId, from: 'family', withVideo: false })
+```
+
+### `POST /api/device/call`
+
+**Send a call message to the family**
+
+Who may call it: the person's paired phone (`Authorization: Bearer <device token>`).
+
+Voice and video calls go directly between the two phones (WebRTC); this server only carries the setup messages. The body is one signal: `ring`, `accept`, `decline`, `offer`, `answer`, `ice` or `hangup`, with a `callId` (8 to 64 letters, digits or dashes, the same for the whole call) and `from` (it must match who is sending). The other side receives it as a live `call` event. Limits: 300 messages a minute and 6 `ring`s in 5 minutes for each care group.
+
+Request body
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `option 1` | object | no | send exactly one of the options |
+| `kind` | "ring" | yes |  |
+| `callId` | string | yes | matches `^[A-Za-z0-9-]{8,64}$` |
+| `from` | one of "person", "family" | yes |  |
+| `withVideo` | boolean | yes |  |
+| `option 2` | object | no | send exactly one of the options |
+| `kind` | "accept" | yes |  |
+| `callId` | string | yes | matches `^[A-Za-z0-9-]{8,64}$` |
+| `from` | one of "person", "family" | yes |  |
+| `option 3` | object | no | send exactly one of the options |
+| `kind` | "decline" | yes |  |
+| `callId` | string | yes | matches `^[A-Za-z0-9-]{8,64}$` |
+| `from` | one of "person", "family" | yes |  |
+| `reason` | one of "declined", "busy" | yes |  |
+| `option 4` | object | no | send exactly one of the options |
+| `kind` | "offer" | yes |  |
+| `callId` | string | yes | matches `^[A-Za-z0-9-]{8,64}$` |
+| `from` | one of "person", "family" | yes |  |
+| `sdp` | string | yes | 1 to 20000 characters |
+| `option 5` | object | no | send exactly one of the options |
+| `kind` | "answer" | yes |  |
+| `callId` | string | yes | matches `^[A-Za-z0-9-]{8,64}$` |
+| `from` | one of "person", "family" | yes |  |
+| `sdp` | string | yes | 1 to 20000 characters |
+| `option 6` | object | no | send exactly one of the options |
+| `kind` | "ice" | yes |  |
+| `callId` | string | yes | matches `^[A-Za-z0-9-]{8,64}$` |
+| `from` | one of "person", "family" | yes |  |
+| `candidate` | object or null | yes |  |
+| `option 7` | object | no | send exactly one of the options |
+| `kind` | "hangup" | yes |  |
+| `callId` | string | yes | matches `^[A-Za-z0-9-]{8,64}$` |
+| `from` | one of "person", "family" | yes |  |
+
+Example
+
+```json
+{
+  "kind": "ring",
+  "callId": "call-8b21d3e0",
+  "from": "person",
+  "withVideo": false
+}
+```
+
+Success: **200**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `ok` | true | yes |  |
+
+Errors
+
+| Status | When |
+|---|---|
+| 401 | The device token is missing, malformed, revoked or unknown |
+| 400 | The body is not valid JSON or does not match the schema (unknown fields are refused) |
+| 400 | `from` is not `person` (`wrong_sender`) |
+| 429 | Too many messages (`rate_limited`) or too many calls (`too_many_calls`) |
+
+With curl
+
+```bash
+curl -s -X POST -H "Authorization: Bearer $DEVICE_TOKEN" -H "Content-Type: application/json" -d '{"kind":"ring","callId":"call-8b21d3e0","from":"person","withVideo":false}' "$BASE/api/device/call"
+```
+
+With the typed client (`@kaabil/contract`)
+
+```ts
+client.device.sendCallSignal({ kind: 'accept', callId, from: 'person' })
+```
+
+### `GET /api/care/groups/:id/ice`
+
+**Which servers to use to connect a call (family)**
+
+Who may call it: a signed-in family member (session cookie).
+
+Pass the answer as `iceServers` to `RTCPeerConnection`. Always a public STUN server. When a Cloudflare Realtime TURN key is configured (`CF_TURN_KEY_ID`, `CF_TURN_API_TOKEN`), short-lived relay credentials are added so a call still connects when a network blocks the direct path. If the relay cannot be reached the answer is STUN only. Never cached.
+
+Path parameters
+
+| Name | Meaning |
+|---|---|
+| `id` | The care group id: from POST /api/care/groups or GET /api/care/me |
+
+Success: **200**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `iceServers` | array of object | yes |  |
+| `iceServers[].urls` | array of string | yes | 1 to 12 items. each item: up to 200 characters |
+| `iceServers[].username` | string | no | up to 500 characters |
+| `iceServers[].credential` | string | no | up to 500 characters |
+
+Errors
+
+| Status | When |
+|---|---|
+| 401 | There is no signed-in session |
+| 404 | The group is not found, or it belongs to another family (the answer is the same, so ids reveal nothing) |
+
+With curl
+
+```bash
+curl -s -b cookies.txt "$BASE/api/care/groups/$GROUP_ID/ice"
+```
+
+With the typed client (`@kaabil/contract`)
+
+```ts
+client.family.iceServers(groupId)
+```
+
+### `GET /api/device/ice`
+
+**Which servers to use to connect a call (phone)**
+
+Who may call it: the person's paired phone (`Authorization: Bearer <device token>`).
+
+The same answer as the family's. Pass it as `iceServers` to `RTCPeerConnection`.
+
+Success: **200**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `iceServers` | array of object | yes |  |
+| `iceServers[].urls` | array of string | yes | 1 to 12 items. each item: up to 200 characters |
+| `iceServers[].username` | string | no | up to 500 characters |
+| `iceServers[].credential` | string | no | up to 500 characters |
+
+Errors
+
+| Status | When |
+|---|---|
+| 401 | The device token is missing, malformed, revoked or unknown |
+
+With curl
+
+```bash
+curl -s -H "Authorization: Bearer $DEVICE_TOKEN" "$BASE/api/device/ice"
+```
+
+With the typed client (`@kaabil/contract`)
+
+```ts
+client.device.iceServers()
 ```
 
 ## Developer console (only when KAABIL_DEV_CONSOLE=1)

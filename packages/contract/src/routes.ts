@@ -10,7 +10,9 @@ import {
   AlertListSchema,
   AlertResultSchema,
   AlertSchema,
+  CallSignalSchema,
   CreateGroupSchema,
+  IceServersSchema,
   DeviceClipListSchema,
   DoseInputSchema,
   DoseListSchema,
@@ -227,6 +229,33 @@ export const ROUTES: RouteDoc[] = [
     errors: [E.badToken, { status: 404, when: 'No such recording, or its sentence is no longer said' }],
   },
 
+  // ---- calls
+  {
+    method: 'POST', path: '/api/care/groups/:id/call', area: 'calls', auth: 'session', summary: "Send a call message to the person's phone",
+    description: 'Voice and video calls go directly between the two phones (WebRTC); this server only carries the setup messages. The body is one signal: `ring`, `accept`, `decline`, `offer`, `answer`, `ice` or `hangup`, with a `callId` (8 to 64 letters, digits or dashes, the same for the whole call) and `from` (it must match who is sending). The other side receives it as a live `call` event. Limits: 300 messages a minute and 6 `ring`s in 5 minutes for each care group.',
+    params: GROUP,
+    request: { schema: CallSignalSchema, example: { kind: 'ring', callId: 'call-4f7a9c21', from: 'family', withVideo: false } },
+    response: { schema: OK }, status: 200,
+    errors: [E.noSession, E.notYours, E.badBody, { status: 400, when: '`from` is not `family` (`wrong_sender`)' }, { status: 409, when: 'A `ring` when no phone is paired (`no_phone`)' }, { status: 429, when: 'Too many messages (`rate_limited`) or too many calls (`too_many_calls`)' }, E.badOrigin],
+  },
+  {
+    method: 'POST', path: '/api/device/call', area: 'calls', auth: 'device', summary: 'Send a call message to the family',
+    description: 'Voice and video calls go directly between the two phones (WebRTC); this server only carries the setup messages. The body is one signal: `ring`, `accept`, `decline`, `offer`, `answer`, `ice` or `hangup`, with a `callId` (8 to 64 letters, digits or dashes, the same for the whole call) and `from` (it must match who is sending). The other side receives it as a live `call` event. Limits: 300 messages a minute and 6 `ring`s in 5 minutes for each care group.',
+    request: { schema: CallSignalSchema, example: { kind: 'ring', callId: 'call-8b21d3e0', from: 'person', withVideo: false } },
+    response: { schema: OK }, status: 200,
+    errors: [E.badToken, E.badBody, { status: 400, when: '`from` is not `person` (`wrong_sender`)' }, { status: 429, when: 'Too many messages (`rate_limited`) or too many calls (`too_many_calls`)' }],
+  },
+  {
+    method: 'GET', path: '/api/care/groups/:id/ice', area: 'calls', auth: 'session', summary: 'Which servers to use to connect a call (family)',
+    description: 'Pass the answer as `iceServers` to `RTCPeerConnection`. Always a public STUN server. When a Cloudflare Realtime TURN key is configured (`CF_TURN_KEY_ID`, `CF_TURN_API_TOKEN`), short-lived relay credentials are added so a call still connects when a network blocks the direct path. If the relay cannot be reached the answer is STUN only. Never cached.',
+    params: GROUP, response: { schema: IceServersSchema }, status: 200, errors: [E.noSession, E.notYours],
+  },
+  {
+    method: 'GET', path: '/api/device/ice', area: 'calls', auth: 'device', summary: 'Which servers to use to connect a call (phone)',
+    description: 'The same answer as the family\'s. Pass it as `iceServers` to `RTCPeerConnection`.',
+    response: { schema: IceServersSchema }, status: 200, errors: [E.badToken],
+  },
+
   // ---- developer console (only when KAABIL_DEV_CONSOLE=1)
   {
     method: 'POST', path: '/api/dev/remind-now', area: 'dev', auth: 'dev', summary: "Send a 'remind now' event to the group's phones",
@@ -274,6 +303,10 @@ export const CLIENT_CALLS: Record<string, string> = {
   'POST /api/device/doses': 'client.device.postDose({ slotId, medicineId, atMs, via })',
   'POST /api/device/alerts': 'client.device.postAlert({ kind, atMs })',
   'GET /api/device/events': 'client.device.events({ onEvent })',
+  'POST /api/care/groups/:id/call': "client.family.sendCallSignal(groupId, { kind: 'ring', callId, from: 'family', withVideo: false })",
+  'POST /api/device/call': "client.device.sendCallSignal({ kind: 'accept', callId, from: 'person' })",
+  'GET /api/care/groups/:id/ice': 'client.family.iceServers(groupId)',
+  'GET /api/device/ice': 'client.device.iceServers()',
   'GET /api/device/poll': 'client.device.events({ onEvent })   // falls back to this endpoint by itself',
   'GET /api/voice/status': 'client.voice.status()',
   'GET /api/care/groups/:id/voice': 'client.family.voice(groupId)',

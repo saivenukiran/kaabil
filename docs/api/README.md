@@ -9,6 +9,7 @@ How to talk to the Kaabil backend: who calls it, how they sign in, what the answ
 | [openapi.json](openapi.json) | The same as OpenAPI 3.1, for tools |
 | [backend.md](backend.md) | How the backend is built, configured, run and tested |
 | [voice.md](voice.md) | Speech, the Yes/No word rules, custom voice, cloud voice |
+| [calls.md](calls.md) | Voice and video calls between the person and the family, and how to test them on two devices |
 
 ## Who calls the API
 
@@ -89,6 +90,7 @@ Both give the same events. Each event is a JSON object with a `type`:
 | `device` | family | A phone paired or was revoked | `device` (or null), `removedId` |
 | `remind` | phone | The developer console asked for a reminder now | `at`, `medicineId?` |
 | `voice` | family, phone | A recording was saved or deleted | `at` |
+| `call` | family or phone (the other side) | A call setup message from the other side | `signal` (see [calls.md](calls.md)) |
 | `ping` | family, phone | Every 15 seconds on a stream, and the moment a stream opens | `at` |
 
 **Stream (server-sent events):** `GET /api/care/groups/:id/events` and `GET /api/device/events`. Frames are `data: {json}` and a blank line. The phone must send a header, so use `fetch` (a browser `EventSource` cannot).

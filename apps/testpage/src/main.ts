@@ -23,4 +23,10 @@ app.append(
 
 // One client for the family (cookie session) and one for the person's phone (device token).
 const person = mountPerson(personRoot, createClient(), log);
-mountFamily(familyRoot, createClient(), log, person.setCode);
+const family = mountFamily(familyRoot, createClient(), log, person.setCode);
+
+// With both phones on one page there is one set of speakers: the person's side stays silent while the family's is in a call,
+// otherwise the two would howl. On two devices each plays its own sound.
+const sync = () => person.call.setSoundOff(family.call.isLive() && person.call.isLive());
+family.call.onLiveChange(sync);
+person.call.onLiveChange(sync);
