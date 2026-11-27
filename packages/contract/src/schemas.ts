@@ -148,6 +148,10 @@ export const EventSchema = z.discriminatedUnion('type', [
 ]);
 export type ServerEvent = z.infer<typeof EventSchema>;
 
+/** Long polling, for clients behind a proxy that holds live streams back. `last` is where to continue from. */
+export const PollResultSchema = z.object({ events: z.array(z.object({ id: z.number().int().nonnegative(), event: EventSchema }).strict()), last: z.number().int().nonnegative() }).strict();
+export type PollResult = z.infer<typeof PollResultSchema>;
+
 export const RemindNowSchema = z.object({ groupId: z.string(), medicineId: z.string().optional() }).strict();
 
 export const VoiceStatusSchema = z

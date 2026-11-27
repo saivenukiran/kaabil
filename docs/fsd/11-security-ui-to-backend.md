@@ -152,7 +152,7 @@ The prototype has no backend, so most of this chapter is release **F**. What the
 | AC-SEC-13-2 | Any spoken output | it is produced | it is one of the fixed messages, with names filled in |
 | AC-SEC-13-3 | A vision or speech provider's answer | it is received | it is validated against a strict schema before use |
 
-### FR-SEC-14 Realtime channel — built (backend): authenticated, scoped to the group, closes at the next check when a session or phone is revoked
+### FR-SEC-14 Realtime channel — built (backend): authenticated, scoped to the group, closes at the next check when a session or phone is revoked; long polling with the same checks when a proxy holds streams back
 
 | AC | Given | When | Then |
 |---|---|---|---|

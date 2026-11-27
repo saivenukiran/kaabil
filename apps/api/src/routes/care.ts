@@ -8,6 +8,7 @@ import { schema } from '@kaabil/db';
 import { allowedOrigins } from '../config';
 import { HttpError, notFound, parseBody, unauthorized } from '../http';
 import { alertDto, doseDto, groupDto, listAlerts, listDoses, medicineDto, requireMember } from '../repo';
+import { pollAnswer } from './poll';
 import { newId, newPairingCode, originAllowed, sha256 } from '../security';
 import { deleteAllClips, deleteClip, getClipAudio, saveClip, voiceOverview } from '../voiceClips';
 import type { Deps } from '../types';
@@ -201,6 +202,14 @@ export function careRoutes(d: Deps) {
         off();
       }
     });
+  });
+
+  // The same events as the stream, for a client behind a proxy that holds streams back.
+  app.get('/groups/:id/poll', async (c) => {
+    const id = c.req.param('id');
+    await requireMember(d.db, c.get('user').id, id);
+    c.header('Cache-Control', 'no-store');
+    return c.json(await pollAnswer(d, id, 'family', c.req.query(), c.req.raw.signal));
   });
 
   // ---- Custom voice: the family member's own recordings of Kaabil's fixed sentences

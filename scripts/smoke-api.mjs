@@ -19,7 +19,7 @@ class Jar {
 const PASSPHRASE_ONE = `dummy-${randomUUID()}`;
 const PASSPHRASE_TWO = `dummy-${randomUUID()}`;
 
-export async function apiChecks(base, check) {
+export async function apiChecks(base, check, options = { stream: true }) {
   const origin = new URL(base).origin;
   const family = new Jar();
   const call = async (jar, method, path, body, headers = {}) => {
@@ -80,28 +80,34 @@ export async function apiChecks(base, check) {
   const plan = await json(await call(null, 'GET', '/api/device/plan', undefined, auth));
   check('the phone gets the plan: person, language and medicine', plan?.person?.name === 'Amma' && plan?.lang === 'te' && plan?.medicines?.[0]?.name === 'Metformin');
 
-  // Open the family's live stream, then have the phone log a dose and raise an emergency.
+  // Live news two ways: the stream (not through every proxy: a Cloudflare quick tunnel holds streams back,
+  // so `--no-stream` skips it there) and long polling, which works through anything.
   const ctl = new AbortController();
   const events = [];
-  const stream = await fetch(base + `${g}/events`, { headers: { cookie: family.cookie, accept: 'text/event-stream' }, signal: ctl.signal });
-  check('the family live stream opens', stream.status === 200 && (stream.headers.get('content-type') ?? '').includes('text/event-stream'), `status ${stream.status}`);
-  const reading = (async () => {
-    const reader = stream.body.getReader();
-    const dec = new TextDecoder();
-    let buf = '';
-    try {
-      for (;;) {
-        const { value, done } = await reader.read();
-        if (done) return;
-        buf += dec.decode(value, { stream: true });
-        for (const m of buf.matchAll(/data: (\{.*\})\n\n/g)) events.push(JSON.parse(m[1]).type);
-        buf = buf.replace(/[\s\S]*\n\n/, '');
+  let reading = Promise.resolve();
+  if (options.stream) {
+    const stream = await fetch(base + `${g}/events`, { headers: { cookie: family.cookie, accept: 'text/event-stream' }, signal: ctl.signal });
+    check('the family live stream opens', stream.status === 200 && (stream.headers.get('content-type') ?? '').includes('text/event-stream'), `status ${stream.status}`);
+    reading = (async () => {
+      const reader = stream.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      try {
+        for (;;) {
+          const { value, done } = await reader.read();
+          if (done) return;
+          buf += dec.decode(value, { stream: true });
+          for (const m of buf.matchAll(/data: (\{.*\})\n\n/g)) events.push(JSON.parse(m[1]).type);
+          buf = buf.replace(/[\s\S]*\n\n/, '');
+        }
+      } catch {
+        /* aborted */
       }
-    } catch {
-      /* aborted */
-    }
-  })();
-  await new Promise((r) => setTimeout(r, 400));
+    })();
+    await new Promise((r) => setTimeout(r, 400));
+  }
+  const cursor0 = await json(await call(family, 'GET', `${g}/poll`));
+  check('polling starts from a position with no events', Array.isArray(cursor0?.events) && cursor0.events.length === 0 && Number.isInteger(cursor0.last), JSON.stringify(cursor0));
 
   const slotId = `${medicine.id}|2026-11-28|08:00`;
   const dose = { slotId, medicineId: medicine.id, atMs: Date.now(), via: 'voice' };
@@ -113,10 +119,24 @@ export async function apiChecks(base, check) {
   const alert = await json(al);
   check('an emergency alert is created (the family consented)', al.status === 201 && alert?.created === true, `status ${al.status}`);
 
-  for (let i = 0; i < 20 && !(events.includes('dose') && events.includes('alert')); i++) await new Promise((r) => setTimeout(r, 200));
+  // Long polling: ask for news after the starting position; it answers as soon as there is some.
+  const polled = [];
+  let cursor = cursor0?.last ?? 0;
+  for (let i = 0; i < 6 && !(polled.includes('dose') && polled.includes('alert')); i++) {
+    const r = await json(await call(family, 'GET', `${g}/poll?after=${cursor}&wait=3000`));
+    cursor = r?.last ?? cursor;
+    for (const e of r?.events ?? []) polled.push(e.event.type);
+  }
+  check('the family gets the dose and the alert by polling too, without a stream', polled.includes('dose') && polled.includes('alert'), polled.join(','));
+  const phonePoll = await json(await call(null, 'GET', '/api/device/poll', undefined, auth));
+  check('the person\'s phone can poll too', Array.isArray(phonePoll?.events) && Number.isInteger(phonePoll.last), JSON.stringify(phonePoll)?.slice(0, 80));
+
+  if (options.stream) {
+    for (let i = 0; i < 20 && !(events.includes('dose') && events.includes('alert')); i++) await new Promise((r) => setTimeout(r, 200));
+    check('the family sees the dose and the alert live on the stream, without asking', events.includes('dose') && events.includes('alert'), events.join(','));
+  }
   ctl.abort();
   await reading;
-  check('the family sees the dose and the alert live, without asking', events.includes('dose') && events.includes('alert'), events.join(','));
 
   const doses = await json(await call(family, 'GET', `${g}/doses`));
   check('the family can list the dose, once', doses?.doses?.length === 1, JSON.stringify(doses));
