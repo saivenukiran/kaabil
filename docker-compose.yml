@@ -58,6 +58,9 @@ services:
       # The plain test console at /dev. Turn it off (0) in any real deployment.
       KAABIL_DEV_CONSOLE: ${KAABIL_DEV_CONSOLE:-1}
       KAABIL_TZ: ${KAABIL_TZ:-Asia/Kolkata}
+      # Optional: a Cloudflare Realtime TURN key, so calls connect through a relay when the direct path is blocked. Empty = public STUN only.
+      CF_TURN_KEY_ID: ${CF_TURN_KEY_ID:-}
+      CF_TURN_API_TOKEN: ${CF_TURN_API_TOKEN:-}
     volumes:
       - secrets:/secrets:ro
     depends_on:
