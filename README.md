@@ -14,6 +14,13 @@ docker compose up --build
 
 Open <http://localhost:8080> in Chrome (it uses the browser's speech recognition; `localhost` counts as a secure page, so the microphone works).
 
+Check that it started and serves safely (needs Docker, or a running copy):
+
+```bash
+npm run smoke                          # builds and starts the image, checks it, stops it
+npm run smoke -- http://localhost:8080 # checks a copy that is already running
+```
+
 Without Docker (Node 24):
 
 ```bash
@@ -32,7 +39,7 @@ npm run build      # typecheck + production build
 5. Try the edge cases: say **"ఇంకా లేదు"** (snoozed 10 minutes), say nothing and press **Advance 10 min** twice (the family gets a missed-dose alert), claim the dose again (refused and flagged), say **"ఛాతీ నొప్పి"** (a 112 button appears and the family is alerted).
 6. No microphone or no Telugu voice on your device? The same flow works with the Yes/No buttons and the text box.
 
-The **Test panel** tab runs 12 scripted scenarios and shows expected versus actual. The **Roadmap** tab lists what works and what is a placeholder.
+The **Test panel** tab runs 12 scripted scenarios and shows expected versus actual. The **Voice check** tab, opened on a phone, shows which voice Kaabil would use in each language, plays every spoken line, tests the microphone, and gives a short report to copy. The **Roadmap** tab lists what works and what is a placeholder.
 
 ## What works, and what does not (yet)
 
